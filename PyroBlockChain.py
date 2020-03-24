@@ -6,6 +6,7 @@ from uuid import uuid4
 
 import requests
 from flask import Flask, jsonify, request
+'''Make sure to use Flask 1.00'''
 
 
 class Blockchain:
@@ -179,14 +180,20 @@ class Blockchain:
 
         guess = f'{last_proof}{proof}{last_hash}'.encode()
         guess_hash = hashlib.sha256(guess).hexdigest()
-        return guess_hash[:4] == "0000"
+        return guess_hash[:5] == "00000"
 
 
 # Instantiate the Node
 app = Flask(__name__)
 
-# Generate a globally unique address for this node
-node_identifier = str(uuid4()).replace('-', '')
+'''
+We want the public key to be a hashed version of the private key, 
+so that one cannot get the private key from the public key.
+Generates a unique private key, and hashes it to create a unique public key
+'''
+privateKey = str(uuid4()).replace('-', '')
+node_identifier = hashlib.sha256(privateKey).hexdigest()
+
 
 # Instantiate the Blockchain
 blockchain = Blockchain()
@@ -248,7 +255,7 @@ def full_chain():
 @app.route('/nodes/register', methods=['POST'])
 def register_nodes():
     values = request.get_json()
-
+    
     nodes = values.get('nodes')
     if nodes is None:
         return "Error: Please supply a valid list of nodes", 400
