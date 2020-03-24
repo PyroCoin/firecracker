@@ -79,9 +79,36 @@ class BlockChain(object):
         blockString = json.dumps(block, sort_keys=True).encode()
         return hashlib.sha256(blockString).hexdigest()
 
+    
+    def proof_of_work(self, lastProof):
+        '''
+        The proof of working algorithm
+        '''
+
+        proof = 0
+
+        while self.validProof(lastProof, proof) is False:
+            proof += 1
+
+        return proof
+
+
+    @staticmethod
+    def validProof(lastProof, proof):
+        '''Essentially validates the proof'''
+
+        guess = f'{lastProof}{proof}'.encode()
+        guessHash = hashlib.sha256(guess).hexdigest()
+        
+        return guessHash[:4] = '0000'
+
+
+
 
 
 
 ''' 
 This class essentially creates the actual chain
 '''
+
+
