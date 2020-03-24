@@ -9,8 +9,12 @@ from flask import Flask, jsonify, request
 
 class BlockChain(object):
     def __init__(self):
-        self.chain = []
+        
         self.currentTransactions = []
+        #List of current transaction that haven't been added to a block yet
+
+        self.chain = []
+        #The entire list of every block that has been made
 
         self.newBlock(previousHash=1, proof=100)
         #Creates the genesis block
