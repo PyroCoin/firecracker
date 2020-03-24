@@ -28,4 +28,8 @@ class BlockChain(object):
     @property
     def lastBlock(self):
         #returns the last block, creating a blockchain
-        
+
+
+''' 
+This class essentially creates the actual chain
+'''
