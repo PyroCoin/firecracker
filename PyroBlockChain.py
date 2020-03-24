@@ -213,6 +213,9 @@ def login():
         privateKey = userPrivateKey
         node_identifier = userPublicKey
 
+    else:
+        return 'Incorrect login information'
+
     return ""
 
 
