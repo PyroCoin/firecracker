@@ -63,15 +63,19 @@ class BlockChain(object):
 
             return self.lastBlock['index'] + 1
     
-    
-    @staticmethod
-    def hash(block):
-        #Function that hashes a block
-        pass
-
     @property
     def lastBlock(self):
         #returns the last block, creating a blockchain
+        return self.chain[-1]
+    
+    @staticmethod
+    def hash(block):
+        '''Hashes the block using SHA256'''
+        
+        blockString = json.dumps(block, sort_keys=True).encode()
+        return hashlib.sha256(blockString).hexdigest()
+
+
 
 
 ''' 
