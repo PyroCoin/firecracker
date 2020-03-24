@@ -199,6 +199,23 @@ node_identifier = hashlib.sha256(PrivateEncoded).hexdigest()
 # Instantiate the Blockchain
 blockchain = Blockchain()
 
+@app.route('/login', methods=['POST'])
+def login():
+    values = request.get_json(force=True)
+
+    userPrivateKey = values.get("privateKey")
+    userPublicKey = values.get("publicKey")
+
+    userPrivateKeyEncode = userPrivateKey.encode()
+    PublicTester = hashlib.sha256(userPrivateKeyEncode).hexdigest()
+
+    if PublicTester == userPublicKey:
+        privateKey = userPrivateKey
+        node_identifier = userPublicKey
+
+    return ""
+
+
 @app.route('/info', methods=['GET'])
 def info():
 
