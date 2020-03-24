@@ -32,9 +32,8 @@ class BlockChain(object):
             'index': len(self.chain),
             'timestamp': time(),
             'proof': proof,
-            'previousHash': previous_hash or self.hash(self.chain[-1])
-            'transactions': self.currentTransactions
-
+            'previousHash': previousHash or self.hash(self.chain[-1]),
+            'transactions': self.currentTransactions,
 
         }
         #Block Headers!
@@ -60,12 +59,12 @@ class BlockChain(object):
         self.currentTransactions.append({
 
             'sender': sender,
-            'recipient': recipient
-            'amount': amount
+            'recipient': recipient,
+            'amount': amount,
 
             })
 
-            return self.lastBlock['index'] + 1
+        return self.lastBlock['index'] + 1
     
     @property
     def lastBlock(self):
@@ -99,8 +98,8 @@ class BlockChain(object):
 
         guess = f'{lastProof}{proof}'.encode()
         guessHash = hashlib.sha256(guess).hexdigest()
-        
-        return guessHash[:4] = '0000'
+
+        return guesshash[:4] == "0000"
 
 
 
@@ -126,9 +125,9 @@ def mine():
     proof = blockchain.proof_of_work(lastProof)
 
     blockchain.newTransaction(
-        sender='0'
-        recipient=nodeIdentifier
-        amount=7
+        sender='0',
+        recipient=nodeIdentifier,
+        amount=7,
     )
 
     response = {
@@ -161,6 +160,6 @@ def fullChain():
     }
     return jsonify(response), 200
 
-if __name__ == if __name__ == "__main__":
+if __name__ == "__main__":
     app.run(host='0.0.0.0', port=5000)
 
