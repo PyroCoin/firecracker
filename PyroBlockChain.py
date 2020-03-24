@@ -201,6 +201,8 @@ blockchain = Blockchain()
 
 @app.route('/login', methods=['POST'])
 def login():
+    global privateKey
+    global node_identifier
     values = request.get_json(force=True)
 
     userPrivateKey = values.get("privateKey")
@@ -210,8 +212,13 @@ def login():
     PublicTester = hashlib.sha256(userPrivateKeyEncode).hexdigest()
 
     if PublicTester == userPublicKey:
-        privateKey = userPrivateKey
-        node_identifier = userPublicKey
+
+        if len(userPrivateKey) != 32:
+            return 'Incorrect login information'
+
+        else:
+            privateKey = userPrivateKey
+            node_identifier = userPublicKey
 
     else:
         return 'Incorrect login information'
