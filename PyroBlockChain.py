@@ -192,12 +192,24 @@ so that one cannot get the private key from the public key.
 Generates a unique private key, and hashes it to create a unique public key
 '''
 privateKey = str(uuid4()).replace('-', '')
-node_identifier = hashlib.sha256(privateKey).hexdigest()
+PrivateEncoded = privateKey.encode()
+node_identifier = hashlib.sha256(PrivateEncoded).hexdigest()
 
 
 # Instantiate the Blockchain
 blockchain = Blockchain()
 
+@app.route('/info', methods=['GET'])
+def info():
+
+    publicKey = node_identifier
+    private_Key = privateKey
+
+    response = {
+        "Public": publicKey,
+        "Private": private_Key,
+    }
+    return jsonify(response), 200
 
 @app.route('/mine', methods=['GET'])
 def mine():
@@ -255,7 +267,7 @@ def full_chain():
 @app.route('/nodes/register', methods=['POST'])
 def register_nodes():
     values = request.get_json()
-    
+
     nodes = values.get('nodes')
     if nodes is None:
         return "Error: Please supply a valid list of nodes", 400
