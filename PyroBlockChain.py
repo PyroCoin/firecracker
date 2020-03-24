@@ -12,12 +12,34 @@ class BlockChain(object):
         self.chain = []
         self.currentTransactions = []
 
+        self.newBlock(previousHash=1, proof=100)
+        #Creates the genesis block
+
     def newBlock(self):
-        #Makes a new block
+        '''
+        
+        '''
         pass
-    def newTransaction(self):
-        #Creates a transaction
-        pass
+
+    def newTransaction(self, sender, recipient, amount):
+        '''
+        Creates a new transaction waiting to be added to the next block. 
+        Each new transaction includes the following data:
+
+        Sender: the address of the sender
+        Recipient: the adress of the person who is on the recieving end of the transaction
+        amount: the amount of money sent 
+        '''
+        
+        self.currentTransactions.append({
+
+            'sender': sender,
+            'recipient': recipient
+            'amount': amount
+
+            })
+
+            return self.lastBlock['index'] + 1
     
     
     @staticmethod
