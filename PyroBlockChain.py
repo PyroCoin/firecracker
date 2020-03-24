@@ -111,4 +111,30 @@ class BlockChain(object):
 This class essentially creates the actual chain
 '''
 
+app = Flask(__name__)
+#Instantiate our Node
+
+nodeIdentifier = str(uuid4()).replace('-', '')
+#Creates a specifier indetifier for the node
+
+blockchain = BlockChain()
+
+@app.route('/mine', methods=['GET'])
+def mine():
+    return 'Mine a new block'
+
+@app.route('/transactions/new', methods=['POST'])
+def newTransaction():
+    return 'We will add a new transaction'
+
+@app.route('/chain', methods=['GET'])
+def fullChain():
+    response = {
+        'chain': blockchain.chain,
+        'length': len(blockchain.chain)
+    }
+    return jsonify(response), 200
+
+if __name__ == if __name__ == "__main__":
+    app.run(host='0.0.0.0', port=5000)
 
