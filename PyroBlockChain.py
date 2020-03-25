@@ -124,12 +124,20 @@ class Blockchain:
         :param sender: Address of the Sender
         :param recipient: Address of the Recipient
         :param amount: Amount
+        :param Transaction ID
         :return: The index of the Block that will hold this transaction
         """
+        TheTime = time()
+        transactionID = str(str(sender) + str(recipient) + str(amount) + str(time) + str(len(self.chain) + 1)).encode()
+        transactionID = hashlib.sha256(transactionID).hexdigest()
+
+
+
         self.current_transactions.append({
             'sender': sender,
             'recipient': recipient,
             'amount': amount,
+            'Transaction ID': transactionID
         })
 
         return self.last_block['index'] + 1
@@ -336,3 +344,4 @@ if __name__ == '__main__':
     port = args.port
 
     app.run(host='0.0.0.0', port=port)
+    
