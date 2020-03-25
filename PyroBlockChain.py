@@ -257,7 +257,7 @@ def mine():
     blockchain.new_transaction(
         sender="0",
         recipient=node_identifier,
-        amount=1,
+        amount=7,
     )
 
     # Forge the new Block by adding it to the chain
