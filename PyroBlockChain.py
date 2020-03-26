@@ -2,7 +2,6 @@ import hashlib
 import json
 from time import time
 from urllib.parse import urlparse
-import random
 import requests
 from ecdsa import BadSignatureError
 from flask import Flask, jsonify, request
@@ -20,6 +19,7 @@ def verify_signature(signature, text, public_key):
 
     except ValueError:
         return False
+
 
 class Blockchain:
     def __init__(self):
