@@ -91,14 +91,13 @@ class Blockchain:
                         'amount': 0
                         })
 
-            for i in self.users:
+            for transaction in self.current_transactions:
+                for i in self.users:
                     if self.current_transactions(transaction)['recipient'] == self.users(i)['publicKey']:
                         Found = 'Yes'
                         self.users(i)['amount'] += self.current_transactions(transaction)['amount']
-                            break
+                        break
 
-                        else:
-                            return False
                     else:
                         Found = 'No'
 
@@ -107,6 +106,8 @@ class Blockchain:
                         {'publicKey': self.current_transactions['sender'],
                         'amount': 0 + self.current_transactions(transaction)['amount']
                         })
+
+            
 
                     
                 
@@ -294,6 +295,45 @@ def new_transaction():
     if not verify_signature(values['signature'], unsigned_transaction_format, values['sender']):
         return 'Your signature does not verify your transaction', 401
 
+    for transaction in self.current_transactions:
+                for i in self.users:
+                    if self.current_transactions(transaction)['sender'] == self.users(i)['publicKey']:
+                        Found = 'Yes'
+                        if self.current_transactions(transaction)['amount'] >= self.users(i)['amount']:
+                            self.users(i)['amount'] -= self.current_transactions(transaction)['amount']
+                            break
+
+                        else:
+                            return 'You are unable to afford this transaction.', 401
+                    else:
+                        Found = 'No'
+
+                if Found == 'No':
+                    self.users.append(
+                        {'publicKey': self.current_transactions['sender'],
+                        'amount': 0
+                        })
+                    return 'You are unable to afford this transaction', 401
+                    break
+
+    for transaction in self.current_transactions:
+        for i in self.users:
+            if self.current_transactions(transaction)['recipient'] == self.users(i)['publicKey']:
+                Found = 'Yes'
+                self.users(i)['amount'] += self.current_transactions(transaction)['amount']
+                break
+
+
+            else:
+                Found = 'No'
+
+        if Found == 'No':
+            self.users.append(
+                {'publicKey': self.current_transactions['sender'],
+                'amount': 0 + self.current_transactions(transaction)['amount']
+                })
+    
+
     # Create a new Transaction
     index = blockchain.new_transaction(values['sender'], values['recipient'], values['amount'])
 
@@ -345,8 +385,11 @@ if __name__ == '__main__':
 
     node_public_key = args.nodeKey
 
-    if node_public_key == "1":
-        raise Exception("You must specify a node key!")
+    if node_public_key == "0":
+        raise ValueError("You must specify a node key!")
+    else:
+        node_public_key = node_public_key.encode()
+        node_public_key = hashlib.sha256(node_public_key).hexdigest()
 
     print(node_public_key)
 
