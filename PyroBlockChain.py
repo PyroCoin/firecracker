@@ -2,10 +2,21 @@ import hashlib
 import json
 from time import time
 from urllib.parse import urlparse
-from uuid import uuid4
-
+import random
 import requests
+from ecdsa import BadSignatureError
 from flask import Flask, jsonify, request
+import ecdsa
+
+
+def verify_signature(signature, text, public_key):
+    vk = ecdsa.VerifyingKey.from_string(bytes.fromhex(public_key))
+
+    try:
+        vk.verify(bytes.fromhex(signature), text.encode())
+        return True
+    except BadSignatureError:
+        return False
 
 
 class Blockchain:
@@ -156,7 +167,7 @@ class Blockchain:
         Simple Proof of Work Algorithm:
          - Find a number p' such that hash(pp') contains leading 4 zeroes
          - Where p is the previous proof, and p' is the new proof
-         
+
         :param last_block: <dict> last Block
         :return: <int>
         """
@@ -229,9 +240,15 @@ def new_transaction():
     values = request.get_json(force=True)
 
     # Check that the required fields are in the POST'ed data
-    required = ['sender', 'recipient', 'amount']
+    required = ['signature', 'sender', 'recipient', 'amount']
     if not all(k in values for k in required):
         return 'Missing values', 400
+
+    unsigned_transaction_format = f"{values['sender']} -{values['amount']}-> {values['recipient']}"
+
+    # Verify signature is valid
+    if not verify_signature(values['signature'], unsigned_transaction_format, values['sender']):
+        return 'Your signature does not verify your transaction', 401
 
     # Create a new Transaction
     index = blockchain.new_transaction(values['sender'], values['recipient'], values['amount'])
@@ -284,8 +301,8 @@ if __name__ == '__main__':
 
     node_public_key = args.nodeKey
 
-    if node_public_key < 2:
-        raise Exception("You must specify a node key that is greater than 1")
+    if node_public_key == "1":
+        raise Exception("You must specify a node key!")
 
     print(node_public_key)
 
