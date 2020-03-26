@@ -1,11 +1,19 @@
 from ecdsa import SigningKey
-from flask import Flask, jsonify, request
+from flask import Flask, redirect, request
 
 app = Flask(__name__)
 
 
+@app.before_request
+def before_request():
+    if request.url.startswith('http://'):
+        url = request.url.replace('http://', 'https://', 1)
+        code = 301
+        return redirect(url, code=code)
+
+
 @app.route('/', methods=['GET'])
-def full_chain():
+def generate_keypair():
     sk = SigningKey.generate()
 
     return f"""
