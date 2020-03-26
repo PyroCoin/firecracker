@@ -15,13 +15,8 @@ if __name__ == '__main__':
     parser.add_argument('-p', '--privateKey', default="0", type=str, help='private key')
     parser.add_argument('-m', '--message', default="0", type=str, help='message to sign')
     args = parser.parse_args()
+    sk = SigningKey.from_string(bytes.fromhex(args.privateKey))
 
-# SECP256k1 is the Bitcoin elliptic curve
+    print(sk.sign(str.encode(args.message)).hex())
 
-sk = SigningKey.generate()
-print(sk.to_string().hex())
-print(sk.get_verifying_key().to_string().hex())
-vk = sk.get_verifying_key()
-sig = sk.sign(b"message")
-vk.verify(sig, b"message")  # True
 
