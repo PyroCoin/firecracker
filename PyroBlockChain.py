@@ -190,7 +190,7 @@ app = Flask(__name__)
 
 # ---------------------[Routes]--------------------- #
 
-node_public_key = 0
+node_public_key = 1
 
 # Instantiate the Blockchain
 blockchain = Blockchain()
@@ -278,11 +278,14 @@ if __name__ == '__main__':
 
     parser = ArgumentParser()
     parser.add_argument('-p', '--port', default=5000, type=int, help='port to listen on')
-    parser.add_argument('-key', '--nodeKey', default="0", type=str, help='port to listen on')
+    parser.add_argument('-key', '--nodeKey', default="0", type=str, help='key for this node')
     args = parser.parse_args()
     port = args.port
 
     node_public_key = args.nodeKey
+
+    if node_public_key < 2:
+        raise Exception("You must specify a node key that is greater than 1")
 
     print(node_public_key)
 
