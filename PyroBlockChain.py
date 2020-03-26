@@ -6,7 +6,6 @@ from uuid import uuid4
 
 import requests
 from flask import Flask, jsonify, request
-'''Make sure to use Flask 1.00'''
 
 
 class Blockchain:
@@ -33,7 +32,6 @@ class Blockchain:
         else:
             raise ValueError('Invalid URL')
 
-
     def valid_chain(self, chain):
         """
         Determine if a given blockchain is valid
@@ -43,7 +41,6 @@ class Blockchain:
 
         last_block = chain[0]
         current_index = 1
-
         while current_index < len(chain):
             block = chain[current_index]
             print(f'{last_block}')
@@ -123,21 +120,18 @@ class Blockchain:
         Creates a new transaction to go into the next mined Block
         :param sender: Address of the Sender
         :param recipient: Address of the Recipient
-        :param amount: Amount
-        :param Transaction ID
+        :param amount: Amount of PryoCoin sent
         :return: The index of the Block that will hold this transaction
         """
-        TheTime = time()
-        transactionID = str(str(sender) + str(recipient) + str(amount) + str(time) + str(len(self.chain) + 1)).encode()
-        transactionID = hashlib.sha256(transactionID).hexdigest()
 
-
+        transaction_id = str(str(sender) + str(recipient) + str(amount) + str(time) + str(len(self.chain) + 1)).encode()
+        transaction_id = hashlib.sha256(transaction_id).hexdigest()
 
         self.current_transactions.append({
             'sender': sender,
             'recipient': recipient,
             'amount': amount,
-            'Transaction ID': transactionID
+            'transaction_id': transaction_id
         })
 
         return self.last_block['index'] + 1
@@ -194,57 +188,13 @@ class Blockchain:
 # Instantiate the Node
 app = Flask(__name__)
 
-'''
-We want the public key to be a hashed version of the private key, 
-so that one cannot get the private key from the public key.
-Generates a unique private key, and hashes it to create a unique public key
-'''
-privateKey = str(uuid4()).replace('-', '')
-PrivateEncoded = privateKey.encode()
-node_identifier = hashlib.sha256(PrivateEncoded).hexdigest()
+# ---------------------[Routes]--------------------- #
 
+node_public_key = 0
 
 # Instantiate the Blockchain
 blockchain = Blockchain()
 
-@app.route('/login', methods=['POST'])
-def login():
-    global privateKey
-    global node_identifier
-    values = request.get_json(force=True)
-
-    userPrivateKey = values.get("privateKey")
-    userPublicKey = values.get("publicKey")
-
-    userPrivateKeyEncode = userPrivateKey.encode()
-    PublicTester = hashlib.sha256(userPrivateKeyEncode).hexdigest()
-
-    if PublicTester == userPublicKey:
-
-        if len(userPrivateKey) != 32:
-            return 'Incorrect login information'
-
-        else:
-            privateKey = userPrivateKey
-            node_identifier = userPublicKey
-
-    else:
-        return 'Incorrect login information'
-
-    return ""
-
-
-@app.route('/info', methods=['GET'])
-def info():
-
-    publicKey = node_identifier
-    private_Key = privateKey
-
-    response = {
-        "Public": publicKey,
-        "Private": private_Key,
-    }
-    return jsonify(response), 200
 
 @app.route('/mine', methods=['GET'])
 def mine():
@@ -256,7 +206,7 @@ def mine():
     # The sender is "0" to signify that this node has mined a new coin.
     blockchain.new_transaction(
         sender="0",
-        recipient=node_identifier,
+        recipient=node_public_key,
         amount=1,
     )
 
@@ -292,6 +242,12 @@ def new_transaction():
 
 @app.route('/chain', methods=['GET'])
 def full_chain():
+    replaced = blockchain.resolve_conflicts()
+
+    if replaced:
+        print("Our chain was not updated and was replaced with one of a chain from one of our peer nodes")
+    else:
+        print("Our chain was appears to be up to date")
     response = {
         'chain': blockchain.chain,
         'length': len(blockchain.chain),
@@ -317,31 +273,17 @@ def register_nodes():
     return jsonify(response), 201
 
 
-@app.route('/nodes/resolve', methods=['GET'])
-def consensus():
-    replaced = blockchain.resolve_conflicts()
-
-    if replaced:
-        response = {
-            'message': 'Our chain was replaced',
-            'new_chain': blockchain.chain
-        }
-    else:
-        response = {
-            'message': 'Our chain is authoritative',
-            'chain': blockchain.chain
-        }
-
-    return jsonify(response), 200
-
-
 if __name__ == '__main__':
     from argparse import ArgumentParser
 
     parser = ArgumentParser()
     parser.add_argument('-p', '--port', default=5000, type=int, help='port to listen on')
+    parser.add_argument('-key', '--nodeKey', default="0", type=str, help='port to listen on')
     args = parser.parse_args()
     port = args.port
 
+    node_public_key = args.nodeKey
+
+    print(node_public_key)
+
     app.run(host='0.0.0.0', port=port)
-    
