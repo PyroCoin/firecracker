@@ -10,14 +10,16 @@ import ecdsa
 
 
 def verify_signature(signature, text, public_key):
-    vk = ecdsa.VerifyingKey.from_string(bytes.fromhex(public_key))
-
     try:
-        vk.verify(bytes.fromhex(signature), text.encode())
-        return True
-    except BadSignatureError:
-        return False
+        vk = ecdsa.VerifyingKey.from_string(bytes.fromhex(public_key))
+        try:
+            vk.verify(bytes.fromhex(signature), text.encode())
+            return True
+        except BadSignatureError:
+            return False
 
+    except ValueError:
+        return False
 
 class Blockchain:
     def __init__(self):
