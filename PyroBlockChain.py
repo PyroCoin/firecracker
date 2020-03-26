@@ -13,6 +13,7 @@ class Blockchain:
         self.current_transactions = []
         self.chain = []
         self.nodes = set()
+        self.users = []
 
         # Create the genesis block
         self.new_block(previous_hash='1', proof=100)
@@ -57,6 +58,47 @@ class Blockchain:
 
             last_block = block
             current_index += 1
+
+            for transaction in self.current_transactions:
+                for i in self.users:
+                    if self.current_transactions(transaction)['sender'] == self.users(i)['publicKey']:
+                        Found = 'Yes'
+                        if self.current_transactions(transaction)['amount'] > self.users(i)['amount']:
+                            self.users(i)['amount'] -= self.current_transactions(transaction)['amount']
+                            break
+
+                        else:
+                            return False
+                    else:
+                        Found = 'No'
+
+                if Found == 'No':
+                    self.users.append(
+                        {'publicKey': self.current_transactions['sender'],
+                        'amount': 0
+                        })
+
+            for i in self.users:
+                    if self.current_transactions(transaction)['recipient'] == self.users(i)['publicKey']:
+                        Found = 'Yes'
+                        self.users(i)['amount'] += self.current_transactions(transaction)['amount']
+                            break
+
+                        else:
+                            return False
+                    else:
+                        Found = 'No'
+
+                if Found == 'No':
+                    self.users.append(
+                        {'publicKey': self.current_transactions['sender'],
+                        'amount': 0 + self.current_transactions(transaction)['amount']
+                        })
+
+                    
+                
+
+        
 
         return True
 
