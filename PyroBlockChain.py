@@ -245,7 +245,7 @@ def full_chain():
     replaced = blockchain.resolve_conflicts()
 
     if replaced:
-        print("Our chain was not updated and was replaced with one of a chain from one of our peer nodes")
+        print("Our chain was updated and was replaced with one of a chain from one of our peer nodes")
     else:
         print("Our chain was appears to be up to date")
     response = {
