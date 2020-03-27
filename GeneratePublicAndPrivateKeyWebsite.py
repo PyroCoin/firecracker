@@ -11,6 +11,8 @@ def generate_keypair():
     return f"""
         <p><b>Public Key:</b> {sk.verifying_key.to_string().hex()}</p>
         <p><b>Private Key:</b> {sk.to_string().hex()}</p>
+        <br>
+        <button onClick="window.location.reload();">Generate Another Key Pair</button>
         """
 
 
