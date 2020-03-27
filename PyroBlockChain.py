@@ -10,7 +10,7 @@ import ecdsa
 
 def verify_signature(signature, text, public_key):
     try:
-        vk = ecdsa.VerifyingKey.from_string(bytes.fromhex(public_key))
+        vk = ecdsa.VerifyingKey.from_string(bytes.fromhex(public_key), curve=ecdsa.SECP256k1)
         try:
             vk.verify(bytes.fromhex(signature), text.encode())
             return True

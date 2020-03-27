@@ -1,6 +1,6 @@
 from json import dumps
 
-from ecdsa import SigningKey
+from ecdsa import SigningKey, SECP256k1
 import json
 
 if __name__ == '__main__':
@@ -14,16 +14,16 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     if args.sender != "ignore":
-        sender = SigningKey.from_string(bytes.fromhex(args.sender))
+        sender = SigningKey.from_string(bytes.fromhex(args.sender), curve=SECP256k1)
         s_pub_key = sender.get_verifying_key().to_string().hex()
     else:
-        sender = SigningKey.generate()
+        sender = SigningKey.generate(curve=SECP256k1)
         s_pub_key = sender.get_verifying_key().to_string().hex()
 
     if args.recipient != "ignore":
         r_pub_key = recipient = args.recipient
     else:
-        recipient = SigningKey.generate()
+        recipient = SigningKey.generate(curve=SECP256k1)
         r_pub_key = recipient.get_verifying_key().to_string().hex()
 
     transaction = {'sender': s_pub_key, 'recipient': r_pub_key, 'amount': args.amount,

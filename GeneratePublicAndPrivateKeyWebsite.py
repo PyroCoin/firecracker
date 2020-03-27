@@ -1,24 +1,16 @@
-from ecdsa import SigningKey
+from ecdsa import SigningKey, SECP256k1
 from flask import Flask, redirect, request
 
 app = Flask(__name__)
 
 
-@app.before_request
-def before_request():
-    if request.url.startswith('https://'):
-        url = request.url.replace('https://', 'http://', 1)
-        code = 301
-        return redirect(url, code=code)
-
-
-@app.route('/', methods=['GET'])
+@app.route('/pyrocoinkeygen', methods=['GET'])
 def generate_keypair():
-    sk = SigningKey.generate()
+    sk = SigningKey.generate(curve=SECP256k1)
 
     return f"""
-        <p><b>Public Key:</b> {sk.to_string().hex()}</p>
-        <p><b>Private Key:</b> {sk.verifying_key.to_string().hex()}</p>
+        <p><b>Public Key:</b> {sk.verifying_key.to_string().hex()}</p>
+        <p><b>Private Key:</b> {sk.to_string().hex()}</p>
         """
 
 
