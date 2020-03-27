@@ -124,7 +124,7 @@ class Blockchain:
             #Creates a loop that goes through all of the current transactions
             TransactionDict = self.current_transactions[transactions]
             
-            TransactionSender = TransactionDict.get('publicKey')
+            TransactionSender = TransactionDict.get('sender')
             #This creates a variable that is equal to the sender's public key
             
             userWorth = self.users.get(TransactionSender)
