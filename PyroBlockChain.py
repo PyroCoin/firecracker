@@ -26,7 +26,8 @@ class Blockchain:
         self.current_transactions = []
         self.chain = []
         self.nodes = set()
-        self.users = []
+        self.users = {'0': 250000000}
+
 
         # Create the genesis block
         self.new_block(previous_hash='1', proof=100)
@@ -71,45 +72,7 @@ class Blockchain:
 
             last_block = block
             current_index += 1
-
-            for transaction in self.current_transactions:
-                for i in self.users:
-                    if self.current_transactions(transaction)['sender'] == self.users(i)['publicKey']:
-                        Found = 'Yes'
-                        if self.current_transactions(transaction)['amount'] > self.users(i)['amount']:
-                            self.users(i)['amount'] -= self.current_transactions(transaction)['amount']
-                            break
-
-                        else:
-                            return False
-                    else:
-                        Found = 'No'
-
-                if Found == 'No':
-                    self.users.append(
-                        {'publicKey': self.current_transactions['sender'],
-                        'amount': 0
-                        })
-
-            for transaction in self.current_transactions:
-                for i in self.users:
-                    if self.current_transactions(transaction)['recipient'] == self.users(i)['publicKey']:
-                        Found = 'Yes'
-                        self.users(i)['amount'] += self.current_transactions(transaction)['amount']
-                        break
-
-                    else:
-                        Found = 'No'
-
-                if Found == 'No':
-                    self.users.append(
-                        {'publicKey': self.current_transactions['sender'],
-                        'amount': 0 + self.current_transactions(transaction)['amount']
-                        })
-
-            
-
-                    
+         
                 
 
         
@@ -157,6 +120,33 @@ class Blockchain:
         :return: New Block
         """
 
+        for transactions in self.current_transactions:
+            #Creates a loop that goes through all of the current transactions
+
+
+            TransactionSender = self.current_transactions(transactions).get('sender')
+            #This creates a variable that is equal to the sender's public key
+            
+            userWorth = self.users.get(TransactionSender)
+            #Creates a variable that is equal to the user's net worth
+
+            if userWorth -- None:
+                self.users[TransactionSender] = 0
+                userWorth = 0
+            #If statement that cheks whether or not a user has been in the user list. 
+            
+            userWorth = self.users.get(TransactionSender)
+            #Reevalutes the userworth. I essentially used this as a way to seperate the "if" statements
+            
+
+            if self.current_transactions(transactions)['amount'] > userWorth:
+                #Checks if the transaction amount is more than the user net worth
+                self.current_transactions.remove(self.current_transactions(transactions))
+                #If so, it removes the transaction from the list of transactions
+            else:
+                pass
+        
+
         block = {
             'index': len(self.chain) + 1,
             'timestamp': time(),
@@ -165,9 +155,9 @@ class Blockchain:
             'previous_hash': previous_hash or self.hash(self.chain[-1]),
         }
 
-        # Reset the current list of transactions
+        # Reset the current list of transactions 
         self.current_transactions = []
-
+        
         self.chain.append(block)
         return block
 
@@ -295,43 +285,6 @@ def new_transaction():
     if not verify_signature(values['signature'], unsigned_transaction_format, values['sender']):
         return 'Your signature does not verify your transaction', 401
 
-    for transaction in blockchain.current_transactions:
-                for i in blockchain.users:
-                    if blockchain.current_transactions(transaction)['sender'] == blockchain.users(i)['publicKey']:
-                        Found = 'Yes'
-                        if blockchain.current_transactions(transaction)['amount'] >= blockchain.users(i)['amount']:
-                            blockchain.users(i)['amount'] -= blockchain.current_transactions(transaction)['amount']
-                            break
-
-                        else:
-                            return 'You are unable to afford this transaction.', 401
-                    else:
-                        Found = 'No'
-
-                if Found == 'No':
-                    blockchain.users.append(
-                        {'publicKey': blockchain.current_transactions['sender'],
-                        'amount': 0
-                        })
-                    return 'You are unable to afford this transaction', 401
-                    break
-
-    for transaction in blockchain.current_transactions:
-        for i in blockchain.users:
-            if blockchain.current_transactions(transaction)['recipient'] == blockchain.users(i)['publicKey']:
-                Found = 'Yes'
-                blockchain.users(i)['amount'] += blockchain.current_transactions(transaction)['amount']
-                break
-
-
-            else:
-                Found = 'No'
-
-        if Found == 'No':
-            blockchain.users.append(
-                {'publicKey': blockchain.current_transactions['sender'],
-                'amount': 0 + blockchain.current_transactions(transaction)['amount']
-                })
     
 
     # Create a new Transaction
