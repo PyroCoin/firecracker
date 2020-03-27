@@ -119,18 +119,18 @@ class Blockchain:
         :param previous_hash: Hash of previous Block
         :return: New Block
         """
-
-        for transactions in self.current_transactions:
+        transactionList = len(self.current_transactions)
+        for transactions in range(0,transactionList):
             #Creates a loop that goes through all of the current transactions
-
-
-            TransactionSender = self.current_transactions(transactions).get('sender')
+            TransactionDict = self.current_transactions[transactions]
+            
+            TransactionSender = TransactionDict.get('publicKey')
             #This creates a variable that is equal to the sender's public key
             
             userWorth = self.users.get(TransactionSender)
             #Creates a variable that is equal to the user's net worth
 
-            if userWorth -- None:
+            if userWorth == None:
                 self.users[TransactionSender] = 0
                 userWorth = 0
             #If statement that cheks whether or not a user has been in the user list. 
@@ -139,9 +139,9 @@ class Blockchain:
             #Reevalutes the userworth. I essentially used this as a way to seperate the "if" statements
             
 
-            if self.current_transactions(transactions)['amount'] > userWorth:
+            if self.current_transactions[transactions].get('amount') > userWorth:
                 #Checks if the transaction amount is more than the user net worth
-                self.current_transactions.remove(self.current_transactions(transactions))
+                self.current_transactions.remove(self.current_transactions[transactions])
                 #If so, it removes the transaction from the list of transactions
             else:
                 pass
