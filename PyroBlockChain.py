@@ -120,31 +120,41 @@ class Blockchain:
         :return: New Block
         """
         transactionList = len(self.current_transactions)
-        for transactions in range(0,transactionList):
-            #Creates a loop that goes through all of the current transactions
-            TransactionDict = self.current_transactions[transactions]
-            
-            TransactionSender = TransactionDict.get('sender')
-            #This creates a variable that is equal to the sender's public key
-            
-            userWorth = self.users.get(TransactionSender)
-            #Creates a variable that is equal to the user's net worth
+        for transactions in range(0,transactionList): #Creates a loop that goes through all of the current transactions
 
-            if userWorth == None:
-                self.users[TransactionSender] = 0
-                userWorth = 0
-            #If statement that cheks whether or not a user has been in the user list. 
+            TransactionDict = self.current_transactions[transactions] 
             
-            userWorth = self.users.get(TransactionSender)
-            #Reevalutes the userworth. I essentially used this as a way to seperate the "if" statements
+            TransactionSender = TransactionDict.get('sender') #Creates a variable that is equal to the sender's public key
+            TransactionReciever = TransactionDict.get('recipient') #Creates a variable that is equal to sender's public key
+            TransactionAmount = TransactionDict.get('amount') #Creates a variable that is equal to the transaction amount
+            
+            
+            userWorth = self.users.get(TransactionSender) #Gets the amount of coins a user has. (Key is equal to the name of the user) 
+            recipientUserWorth = self.users.get(TransactionReciever) #Variable that is equal to the net worth of the reciever
             
 
-            if self.current_transactions[transactions].get('amount') > userWorth:
-                #Checks if the transaction amount is more than the user net worth
-                self.current_transactions.remove(self.current_transactions[transactions])
-                #If so, it removes the transaction from the list of transactions
+            if userWorth == None: #Checks if the user has ever made a transaction/ is in the list
+                self.users[TransactionSender] = 0 #Sets the worth to 0 because the user has never made a transaction and has no money
+                userWorth = 0 #Sets the userworth to 0
+            
+            userWorth = self.users.get(TransactionSender) #Reevalutes the userworth
+
+            if userWorth == None: #Checks if recipient has ever been involved in a transaction
+                self.user[TransactionReciever] = 0
+                recipientUserWorth = 0
+
+            recipientUserWorth = self.users.get(TransactionReciever) #Reevaluates the userworth testing
+            
+
+            if self.current_transactions[transactions].get('amount') > userWorth: #Checks if the user can afford to pay the transaction    
+                self.current_transactions.remove(self.current_transactions[transactions]) #If they cannot, the transaction is removed from the list of current transactions
+                    
             else:
-                pass
+                self.users[TransactionSender] -= TransactionAmount #Subtracts the amount from the sender
+                self.users[TransactionReciever] += TransactionAmount #Adds the amount from the sender
+
+
+
         
 
         block = {
@@ -154,6 +164,8 @@ class Blockchain:
             'proof': proof,
             'previous_hash': previous_hash or self.hash(self.chain[-1]),
         }
+
+
 
         # Reset the current list of transactions 
         self.current_transactions = []
