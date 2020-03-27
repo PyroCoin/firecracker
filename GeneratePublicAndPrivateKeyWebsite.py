@@ -1,5 +1,5 @@
 from ecdsa import SigningKey, SECP256k1
-from flask import Flask, redirect, request
+from flask import Flask
 
 app = Flask(__name__)
 
