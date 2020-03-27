@@ -122,8 +122,7 @@ class Blockchain:
         transactionList = len(self.current_transactions)
         for transactions in range(0,transactionList): #Creates a loop that goes through all of the current transactions
 
-            TransactionDict = self.current_transactions[transactions] 
-            
+            TransactionDict = self.current_transactions[transactions] #Creates a variable equal to the transactions that haven't been added to a new block
             TransactionSender = TransactionDict.get('sender') #Creates a variable that is equal to the sender's public key
             TransactionReciever = TransactionDict.get('recipient') #Creates a variable that is equal to sender's public key
             TransactionAmount = TransactionDict.get('amount') #Creates a variable that is equal to the transaction amount
@@ -138,12 +137,15 @@ class Blockchain:
                 userWorth = 0 #Sets the userworth to 0
             
             userWorth = self.users.get(TransactionSender) #Reevalutes the userworth
+            
 
-            if userWorth == None: #Checks if recipient has ever been involved in a transaction
-                self.user[TransactionReciever] = 0
-                recipientUserWorth = 0
-
+            if recipientUserWorth == None: #Checks if recipient has ever been involved in a transaction
+                self.users[TransactionReciever] = 0 #If the user has never been involved in a transaction, they have no money
+            
             recipientUserWorth = self.users.get(TransactionReciever) #Reevaluates the userworth testing
+
+            
+
             
 
             if self.current_transactions[transactions].get('amount') > userWorth: #Checks if the user can afford to pay the transaction    
@@ -337,6 +339,11 @@ def register_nodes():
         'total_nodes': list(blockchain.nodes),
     }
     return jsonify(response), 201
+
+@app.route('/users', methods=['GET'])
+def users():
+    return str(blockchain.users)
+
 
 
 
