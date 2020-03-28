@@ -6,7 +6,6 @@ import requests
 from ecdsa import BadSignatureError
 from flask import Flask, jsonify, request
 import ecdsa
-from datetime import datetime
 
 
 def verify_signature(signature, text, public_key):
@@ -28,7 +27,6 @@ class Blockchain:
         self.chain = []
         self.nodes = set()
         self.users = {'0': 250000000}
-        self.verifiedTransactions = []
 
 
         # Create the genesis block
@@ -120,13 +118,6 @@ class Blockchain:
         :param proof: The proof given by the Proof of Work algorithm
         :param previous_hash: Hash of previous Block
         :return: New Block
-
-        This function verifies payments. Basically, it makes sure that a user is able to pay the amount that the transaction specifies
-        It also moves the PyroCoin between users. 
-
-        However, when a user sends money to someone, the program automatically verifies that they can pay, before the transaction is sent. 
-        However, only the sender verifies it, so with this system, we have nodes verify this before creating a new block. 
-        If this transaction was already verified by the node, they take no action because in their chain, the money has already been transfered. 
         """
         transactionList = len(self.current_transactions)
         for transactions in range(0,transactionList): #Creates a loop that goes through all of the current transactions
@@ -136,41 +127,33 @@ class Blockchain:
             TransactionReciever = TransactionDict.get('recipient') #Creates a variable that is equal to sender's public key
             TransactionAmount = TransactionDict.get('amount') #Creates a variable that is equal to the transaction amount
             
-            if TransactionDict.get('transaction_id') in self.verifiedTransactions: #Check if the transaction has already been verified by the node
-                pass #If so just skip
+            
+            userWorth = self.users.get(TransactionSender) #Gets the amount of coins a user has. (Key is equal to the name of the user) 
+            recipientUserWorth = self.users.get(TransactionReciever) #Variable that is equal to the net worth of the reciever
+            
+
+            if userWorth == None: #Checks if the user has ever made a transaction/ is in the list
+                self.users[TransactionSender] = 0 #Sets the worth to 0 because the user has never made a transaction and has no money
+                userWorth = 0 #Sets the userworth to 0
+            
+            userWorth = self.users.get(TransactionSender) #Reevalutes the userworth
+            
+
+            if recipientUserWorth == None: #Checks if recipient has ever been involved in a transaction
+                self.users[TransactionReciever] = 0 #If the user has never been involved in a transaction, they have no money
+            
+            recipientUserWorth = self.users.get(TransactionReciever) #Reevaluates the userworth testing
 
             
-            else: #If this is a transaction that hasn't been verified, verify
 
-                userWorth = self.users.get(TransactionSender) #Gets the amount of coins a user has. (Key is equal to the name of the user) 
-                recipientUserWorth = self.users.get(TransactionReciever) #Variable that is equal to the net worth of the reciever
-                
+            
 
-                if userWorth == None: #Checks if the user has ever made a transaction/ is in the list
-                    self.users[TransactionSender] = 0 #Sets the worth to 0 because the user has never made a transaction and has no money
-                    userWorth = 0 #Sets the userworth to 0
-                
-                userWorth = self.users.get(TransactionSender) #Reevalutes the userworth
-                
-
-                if recipientUserWorth == None: #Checks if recipient has ever been involved in a transaction
-                    self.users[TransactionReciever] = 0 #If the user has never been involved in a transaction, they have no money
-                
-                recipientUserWorth = self.users.get(TransactionReciever) #Reevaluates the userworth testing
-
-
-                if self.current_transactions[transactions].get('amount') > userWorth: #Checks if the user can afford to pay the transaction
-                    if TransactionDict.get('transaction_id')  in self.verifiedTransactions: #If this transaction has already been verified, don't change it
-                        pass
-                    else: 
-                        self.current_transactions.remove(self.current_transactions[transactions]) #If they cannot, the transaction is removed from the list of current transactions
-                        
-                else:
-                    if TransactionDict.get('transaction_id') in self.verifiedTransactions: #If this transaction has already been verified, don't change it
-                        pass
-                    else:
-                        self.users[TransactionSender] -= TransactionAmount #Subtracts the amount from the sender
-                        self.users[TransactionReciever] += TransactionAmount #Adds the amount from the sender
+            if self.current_transactions[transactions].get('amount') > userWorth: #Checks if the user can afford to pay the transaction    
+                self.current_transactions.remove(self.current_transactions[transactions]) #If they cannot, the transaction is removed from the list of current transactions
+                    
+            else:
+                self.users[TransactionSender] -= TransactionAmount #Subtracts the amount from the sender
+                self.users[TransactionReciever] += TransactionAmount #Adds the amount from the sender
 
 
 
@@ -188,7 +171,6 @@ class Blockchain:
 
         # Reset the current list of transactions 
         self.current_transactions = []
-        self.verifiedTransactions = []
         
         self.chain.append(block)
         return block
@@ -202,40 +184,15 @@ class Blockchain:
         :return: The index of the Block that will hold this transaction
         """
 
-        transaction_id = str(str(sender) + str(recipient) + str(amount) + str(datetime.now()) + str(len(self.chain) + 1)).encode()
+        transaction_id = str(str(sender) + str(recipient) + str(amount) + str(time) + str(len(self.chain) + 1)).encode()
         transaction_id = hashlib.sha256(transaction_id).hexdigest()
-        '''Below is the verification for payments. It essentially makes sure the sender has enough money to pay for the transaction.
-        If the user does, the money will be transfered, otherwise, it will not. 
-        It also adds user to the user list if they have never participated in a transaction'''
 
-        
-
-        userWorth = self.users.get(sender) #Create a variable the is equal to the worth of the sender
-        recipientWorth = self.users.get(recipient) #Creates a variable that is equal to the worth of the recipient
-
-        if userWorth == None: #Checks if the sender has ever been involved in a transaction
-            self.users[sender] = 0 #If not, their net worth is 0
-
-        userWorth = self.users.get(sender) #Reevaluates the userworth 
-
-        if recipientWorth == None: #Checks if the recipient has ever been involved in a transaction
-            self.users[recipient] = 0 #If not, their net worth is 0
-
-        recipientWorth = self.users.get(recipient) #Reevaluates the recipient's userworth
-
-        if amount > userWorth:
-            pass
-        else:
-            self.users[sender] -= amount #Subtracts the amount from the sender
-            self.users[recipient] += amount #Adds the amount from the sender
-            self.current_transactions.append({
-                'sender': sender,
-                'recipient': recipient,
-                'amount': amount,
-                'transaction_id': transaction_id
-            })
-            self.verifiedTransactions.append(transaction_id)
-
+        self.current_transactions.append({
+            'sender': sender,
+            'recipient': recipient,
+            'amount': amount,
+            'transaction_id': transaction_id
+        })
 
         return self.last_block['index'] + 1
 
