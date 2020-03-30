@@ -22,6 +22,8 @@ def verify_signature(signature, text, public_key):
         return False
 
 
+
+
 class Blockchain:
     def __init__(self):
         self.current_transactions = []
@@ -201,8 +203,10 @@ class Blockchain:
         :param amount: Amount of PryoCoin sent
         :return: The index of the Block that will hold this transaction
         """
-
-        transaction_id = str(str(sender) + str(recipient) + str(amount) + str(datetime.now()) + str(len(self.chain) + 1)).encode()
+        Current_UTC_Time = datetime.utcnow()
+        timestamp = int(str(Current_UTC_Time.year) + str(Current_UTC_Time.month) + str(Current_UTC_Time.day) + str(Current_UTC_Time.hour) + str(Current_UTC_Time.minute) + str(Current_UTC_Time.second) + str(Current_UTC_Time.microsecond))
+        
+        transaction_id = str(str(sender) + str(recipient) + str(amount) + str(timestamp) + str(len(self.chain) + 1)).encode()
         transaction_id = hashlib.sha256(transaction_id).hexdigest()
         '''Below is the verification for payments. It essentially makes sure the sender has enough money to pay for the transaction.
         If the user does, the money will be transfered, otherwise, it will not. 
@@ -232,7 +236,8 @@ class Blockchain:
                 'sender': sender,
                 'recipient': recipient,
                 'amount': amount,
-                'transaction_id': transaction_id
+                'transaction_id': transaction_id,
+                'timestamp': timestamp 
             })
             self.verifiedTransactions.append(transaction_id)
 
