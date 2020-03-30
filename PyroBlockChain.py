@@ -121,9 +121,16 @@ class Blockchain:
         Create a new Block in the Blockchain
         :param proof: The proof given by the Proof of Work algorithm
         :param previous_hash: Hash of previous Block
-        :return: New Block
+        :return: New Block"""
 
-        This function verifies payments. Basically, it makes sure that a user is able to pay the amount that the transaction specifies
+        '''
+        This following code sorts the list of current transactions based
+        on the time that they occured before the transaciton are verified and the payments occur.
+        '''
+
+        self.current_transactions = self.current_transactions.sort((key=lambda d: d['timestamp']))
+
+        """The follow part of the function verifies payments. Basically, it makes sure that a user is able to pay the amount that the transaction specifies
         It also moves the PyroCoin between users. 
 
         However, when a user sends money to someone, the program automatically verifies that they can pay, before the transaction is sent. 
@@ -208,39 +215,15 @@ class Blockchain:
         
         transaction_id = str(str(sender) + str(recipient) + str(amount) + str(timestamp) + str(len(self.chain) + 1)).encode()
         transaction_id = hashlib.sha256(transaction_id).hexdigest()
-        '''Below is the verification for payments. It essentially makes sure the sender has enough money to pay for the transaction.
-        If the user does, the money will be transfered, otherwise, it will not. 
-        It also adds user to the user list if they have never participated in a transaction'''
 
-        
 
-        userWorth = self.users.get(sender) #Create a variable the is equal to the worth of the sender
-        recipientWorth = self.users.get(recipient) #Creates a variable that is equal to the worth of the recipient
-
-        if userWorth == None: #Checks if the sender has ever been involved in a transaction
-            self.users[sender] = 0 #If not, their net worth is 0
-
-        userWorth = self.users.get(sender) #Reevaluates the userworth 
-
-        if recipientWorth == None: #Checks if the recipient has ever been involved in a transaction
-            self.users[recipient] = 0 #If not, their net worth is 0
-
-        recipientWorth = self.users.get(recipient) #Reevaluates the recipient's userworth
-
-        if amount > userWorth:
-            pass
-        else:
-            self.users[sender] -= amount #Subtracts the amount from the sender
-            self.users[recipient] += amount #Adds the amount from the sender
-            self.current_transactions.append({
-                'sender': sender,
-                'recipient': recipient,
-                'amount': amount,
-                'transaction_id': transaction_id,
-                'timestamp': timestamp 
-            })
-            self.verifiedTransactions.append(transaction_id)
-
+        self.current_transactions.append({
+            'sender': sender,
+            'recipient': recipient,
+            'amount': amount,
+            'transaction_id': transaction_id,
+            'timestamp': timestamp 
+        })
 
         return self.last_block['index'] + 1
 
