@@ -127,8 +127,8 @@ class Blockchain:
         This following code sorts the list of current transactions based
         on the time that they occured before the transaciton are verified and the payments occur.
         '''
-
-        self.current_transactions = self.current_transactions.sort((key=lambda d: d['timestamp']))
+        
+        self.current_transactions.sort(key=lambda d: d['timestamp'])
 
         """The follow part of the function verifies payments. Basically, it makes sure that a user is able to pay the amount that the transaction specifies
         It also moves the PyroCoin between users. 
@@ -138,6 +138,8 @@ class Blockchain:
         If this transaction was already verified by the node, they take no action because in their chain, the money has already been transfered. 
         """
         transactionList = len(self.current_transactions)
+
+        
         for transactions in range(0,transactionList): #Creates a loop that goes through all of the current transactions
 
             TransactionDict = self.current_transactions[transactions] #Creates a variable equal to the transactions that haven't been added to a new block
