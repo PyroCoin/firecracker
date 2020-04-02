@@ -30,7 +30,7 @@ class Blockchain:
         self.chain = []
         self.nodes = set()
         self.users = {'0': 250000000}
-        self.verifiedTransactions = []
+        self.transactionsCheck = []
 
 
         # Create the genesis block
@@ -128,7 +128,8 @@ class Blockchain:
         on the time that they occured before the transaciton are verified and the payments occur.
         '''
         
-        self.current_transactions.sort(key=lambda d: d['timestamp'])
+        self.current_transactions.sort(key=lambda d: d['timestamp']) #Sorts
+        self.transactionsCheck = self.current_transactions.copy() #Creates copy of self.currentTransactions
 
         """The follow part of the function verifies payments. Basically, it makes sure that a user is able to pay the amount that the transaction specifies
         It also moves the PyroCoin between users. 
@@ -137,55 +138,43 @@ class Blockchain:
         However, only the sender verifies it, so with this system, we have nodes verify this before creating a new block. 
         If this transaction was already verified by the node, they take no action because in their chain, the money has already been transfered. 
         """
-        transactionList = len(self.current_transactions)
-
-        
-        for transactions in range(0,transactionList): #Creates a loop that goes through all of the current transactions
-
-            TransactionDict = self.current_transactions[transactions] #Creates a variable equal to the transactions that haven't been added to a new block
-            TransactionSender = TransactionDict.get('sender') #Creates a variable that is equal to the sender's public key
-            TransactionReciever = TransactionDict.get('recipient') #Creates a variable that is equal to sender's public key
-            TransactionAmount = TransactionDict.get('amount') #Creates a variable that is equal to the transaction amount
+        for transaction in self.current_transactions: #Creates a for loop that goes thru all the transactions
             
-            if TransactionDict.get('transaction_id') in self.verifiedTransactions: #Check if the transaction has already been verified by the node
-                pass #If so just skip
+
+            sender = str(transaction['sender']) #creates a variable equal to the sender's public address
+            recipient = str(transaction['recipient']) #creates a variable equal to the recipient's public address
+            amount = int(transaction['amount']) #creates a varible equal to the amount
+        
+
+            if self.users.get(sender) == None: #Checks if the sender has ever been in a transaction
+                self.users[sender] = 0 #If not, they are added to the list of users, with the net worth being 0
+
+            senderAmount = self.users.get(sender) #Gets the net worth of the sender
+
+            if recipient not in self.users: #Checks if the recipient has ever been in a transaction
+                self.users[recipient] = 0 #If not, they are added to the list of users, with the net worth being 0
+
+            recipientAmount = self.users.get(recipient) #Gets the worth of the recipient
 
             
-            else: #If this is a transaction that hasn't been verified, verify
+            senderAfterTransaction = senderAmount - amount
+            print(senderAfterTransaction) 
 
-                userWorth = self.users.get(TransactionSender) #Gets the amount of coins a user has. (Key is equal to the name of the user) 
-                recipientUserWorth = self.users.get(TransactionReciever) #Variable that is equal to the net worth of the reciever
+            if senderAfterTransaction >= 0: #If the transaction amount is greater or equal to the sender's worth, the transaction will occur
+                senderAmount -= amount #subtracts the transaction amount from the worth of the sender
+                self.users[sender] = senderAmount #Actually changes the value of the sender in the userlist
+
+                recipientAmount += int(amount) #Adds the transaction amount to the worth of the user
+                self.users[recipient] = recipientAmount #Actually changes the value of the recipient in the userlist
+
+                
+            
+            elif 0 > senderAfterTransaction: #The sender is unable to afford the transaction
+                self.transactionsCheck.remove(transaction)#Removes the transaction from the transactions list
                 
 
-                if userWorth == None: #Checks if the user has ever made a transaction/ is in the list
-                    self.users[TransactionSender] = 0 #Sets the worth to 0 because the user has never made a transaction and has no money
-                    userWorth = 0 #Sets the userworth to 0
-                
-                userWorth = self.users.get(TransactionSender) #Reevalutes the userworth
-                
 
-                if recipientUserWorth == None: #Checks if recipient has ever been involved in a transaction
-                    self.users[TransactionReciever] = 0 #If the user has never been involved in a transaction, they have no money
-                
-                recipientUserWorth = self.users.get(TransactionReciever) #Reevaluates the userworth testing
-
-
-                if self.current_transactions[transactions].get('amount') > userWorth: #Checks if the user can afford to pay the transaction
-                    if TransactionDict.get('transaction_id')  in self.verifiedTransactions: #If this transaction has already been verified, don't change it
-                        pass
-                    else: 
-                        self.current_transactions.remove(self.current_transactions[transactions]) #If they cannot, the transaction is removed from the list of current transactions
-                        
-                else:
-                    if TransactionDict.get('transaction_id') in self.verifiedTransactions: #If this transaction has already been verified, don't change it
-                        pass
-                    else:
-                        self.users[TransactionSender] -= TransactionAmount #Subtracts the amount from the sender
-                        self.users[TransactionReciever] += TransactionAmount #Adds the amount from the sender
-
-
-
-        
+        self.current_transactions = self.transactionsCheck
 
         block = {
             'index': len(self.chain) + 1,
@@ -199,7 +188,8 @@ class Blockchain:
 
         # Reset the current list of transactions 
         self.current_transactions = []
-        self.verifiedTransactions = []
+        self.transactionsCheck = []
+        
         
         self.chain.append(block)
         return block
@@ -401,4 +391,6 @@ if __name__ == '__main__':
 
     print(node_public_key)
 
+  
     app.run(host='0.0.0.0', port=port)
+
