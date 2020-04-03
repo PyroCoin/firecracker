@@ -44,7 +44,10 @@ class FirebaseConnection:
             EndpointsData = open('Endpoints.txt', 'r+')
             EndpointsData.truncate(0)
             users = self.dataBase.child('users').get()
-            userDictionaries = users.val().values()
+            try:
+                userDictionaries = users.val().values()
+            except:
+                userDictionaries = [self.currentNode]
             self.userIPList = []
             with open('Endpoints.txt', 'w') as f:
                 for item in userDictionaries:
