@@ -3,10 +3,17 @@ import socket
 import os
 from firebase import Firebase
 
+def ReadStorage():
+    global ListOfNodeIPs
+    ListOfNodeIPs = []
+    with open('Endpoints.txt', 'r+') as EndpointsData:
+        for line in EndpointsData:
+            line = line.strip()
+            ListOfNodeIPs.append(line)
 
 
-
-def findStuff():
+def findEndpoints():
+    global ListOfNodeIPs
     config = {
         'apiKey': "AIzaSyD3mdx4IJ4y5l9t16UAXiLsMyQEEDkpSPE",
         'authDomain': "pyrocoinip.firebaseapp.com",
@@ -59,6 +66,14 @@ def findStuff():
                 f.write("%s\n" % item)
         EndpointsData.close()
         print(userIPList)
+
+    ReadStorage()
+    print(ListOfNodeIPs)
+    
+
+    
+
+
         
   
 
