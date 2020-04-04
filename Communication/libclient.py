@@ -121,7 +121,7 @@ class Message:
                 self._set_selector_events_mask("r")
 
     def close(self):
-        print("closing connection to", self.addr)
+        print(str(self.request), "closing connection to", self.addr)
         try:
             self.selector.unregister(self.sock)
         except Exception as e:

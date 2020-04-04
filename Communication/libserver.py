@@ -4,11 +4,7 @@ import json
 import io
 import struct
 
-request_search = {
-    "morpheus": "Follow the white rabbit. \U0001f430",
-    "ring": "In the caves beneath the Misty Mountains. \U0001f48d",
-    "\U0001f436": "\U0001f43e Playing ball! \U0001f3d0",
-}
+
 
 
 class Message:
@@ -37,20 +33,24 @@ class Message:
 
     def _read(self):
         try:
-            # Should be ready to read
-            data = self.sock.recv(4096)
+            while True:
+                # Should be ready to read
+                data = self.sock.recv(4096)
+                self._recv_buffer += data
+
+                if len(self._recv_buffer) <= 0:
+                    break
+
+                
+
         except BlockingIOError:
             # Resource temporarily unavailable (errno EWOULDBLOCK)
             pass
-        else:
-            if data:
-                self._recv_buffer += data
-            else:
-                raise RuntimeError("Peer closed.")
+        
 
     def _write(self):
         if self._send_buffer:
-            print("sending", repr(self._send_buffer), "to", self.addr)
+            print("sending to", self.addr)
             try:
                 # Should be ready to write
                 sent = self.sock.send(self._send_buffer)
@@ -92,7 +92,6 @@ class Message:
         action = self.request.get("action")
         if action == "search":
             query = self.request.get("value")
-            answer = request_search.get(query) or f'No match for "{query}".'
             content = {"result": answer}
         else:
             content = {"result": f'Error: invalid action "{action}".'}
@@ -141,7 +140,8 @@ class Message:
         self._write()
 
     def close(self):
-        print("closing connection to", self.addr)
+        print('recieved', self.request, 'from', self.addr)
+        print("closing connection")
         try:
             self.selector.unregister(self.sock)
         except Exception as e:
@@ -186,6 +186,8 @@ class Message:
                     raise ValueError(f'Missing required header "{reqhdr}".')
 
     def process_request(self):
+        
+
         content_len = self.jsonheader["content-length"]
         if not len(self._recv_buffer) >= content_len:
             return
@@ -194,7 +196,7 @@ class Message:
         if self.jsonheader["content-type"] == "text/json":
             encoding = self.jsonheader["content-encoding"]
             self.request = self._json_decode(data, encoding)
-            print("received request", repr(self.request), "from", self.addr)
+            print("received request", self.request, "from", self.addr)
         else:
             # Binary or unknown content-type
             self.request = data
