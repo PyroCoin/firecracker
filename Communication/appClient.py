@@ -5,6 +5,7 @@ import traceback
 import asyncio
 
 from Communication import libclient
+from Communication.DataStoring import FirebaseConnection
 
 class Client(asyncio.Protocol):
     def __init__(self):
@@ -55,6 +56,7 @@ class Client(asyncio.Protocol):
         except KeyboardInterrupt:
             print("caught keyboard interrupt, exiting")
         finally:
+            
             self.sel.close()
 
 
@@ -65,21 +67,32 @@ def ClientFunction(host, port):
     theClient.send('HELLO!', host, port)
     print('hello')
 
-async def connect_to_server(loop):
+async def connect_to_server(loop, server_host, server_port):
     try:
-        await loop.create_connection(ClientFunction('127.0.0.1', 5050))
+        await loop.create_connection(ClientFunction(server_host, server_port))
     except ValueError:
         pass
     
 
 
 def main():
-    loop = asyncio.get_event_loop()
-    loop.create_task(connect_to_server(loop))
-    loop.create_task(connect_to_server(loop))
-    loop.create_task(connect_to_server(loop))
-    loop.create_task(connect_to_server(loop))
+    ServerNodeData = FirebaseConnection()
+    ServerNodeData.findEndpoints()
 
-    loop.run_until_complete(connect_to_server(loop))
+    loop = asyncio.get_event_loop()
+
+    for data in ServerNodeData.Nodes:
+        try:
+            serverIP = data['IP']
+            serverPort = data['PORT']
+            loop.create_task(connect_to_server(loop, serverIP, serverPort))
+
+        except:
+            pass
+
+        
+
+
+    loop.run_until_complete(connect_to_server(loop, serverIP, serverPort))
     
             
