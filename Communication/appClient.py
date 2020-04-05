@@ -2,10 +2,11 @@ import sys
 import socket
 import selectors
 import traceback
+import asyncio
 
 from Communication import libclient
 
-class Client:
+class Client(asyncio.Protocol):
     def __init__(self):
         self.sel = selectors.DefaultSelector()
 
@@ -28,9 +29,7 @@ class Client:
         self.sel.register(sock, events, data=message)
 
 
-    def send(self, message):
-        host = '127.0.0.1'
-        port = 5050
+    def send(self, message, host, port):
         value = message
         value = str(value)
         request = self.create_request(value) #THIS IS THE MESSAGE! This is where the message is sent!
@@ -57,4 +56,30 @@ class Client:
             print("caught keyboard interrupt, exiting")
         finally:
             self.sel.close()
+
+
+
+def ClientFunction(host, port):
+    theClient = Client()
+
+    theClient.send('HELLO!', host, port)
+    print('hello')
+
+async def connect_to_server(loop):
+    try:
+        await loop.create_connection(ClientFunction('127.0.0.1', 5050))
+    except ValueError:
+        pass
+    
+
+
+def main():
+    loop = asyncio.get_event_loop()
+    loop.create_task(connect_to_server(loop))
+    loop.create_task(connect_to_server(loop))
+    loop.create_task(connect_to_server(loop))
+    loop.create_task(connect_to_server(loop))
+
+    loop.run_until_complete(connect_to_server(loop))
+    
             
