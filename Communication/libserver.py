@@ -37,10 +37,13 @@ class Message:
                 # Should be ready to read
                 data = self.sock.recv(4096)
                 self._recv_buffer += data
+                
 
                 if len(self._recv_buffer) <= 0:
                     break
 
+            
+            
                 
 
         except BlockingIOError:
@@ -105,8 +108,7 @@ class Message:
 
     def _create_response_binary_content(self):
         response = {
-            "content_bytes": b"First 10 bytes of request: "
-            + self.request[:10],
+            "content_bytes": self.request,
             "content_type": "binary/custom-server-binary-type",
             "content_encoding": "binary",
         }
@@ -115,6 +117,7 @@ class Message:
     def process_events(self, mask):
         if mask & selectors.EVENT_READ:
             self.read()
+            print()
         if mask & selectors.EVENT_WRITE:
             self.write()
 
@@ -139,8 +142,14 @@ class Message:
 
         self._write()
 
+    def getMessage(self):
+        return self.request
+
     def close(self):
         print('recieved', self.request, 'from', self.addr)
+        self.MESSAGE = self.getMessage()
+        
+        
         print("closing connection")
         try:
             self.selector.unregister(self.sock)
@@ -160,6 +169,7 @@ class Message:
         finally:
             # Delete reference to socket object for garbage collection
             self.sock = None
+            
 
     def process_protoheader(self):
         hdrlen = 2
@@ -216,3 +226,4 @@ class Message:
         message = self._create_message(**response)
         self.response_created = True
         self._send_buffer += message
+

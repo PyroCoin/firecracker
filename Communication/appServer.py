@@ -2,6 +2,8 @@ import sys
 import socket
 import selectors
 import traceback
+import time
+import threading
 
 from Communication import libserver
 
@@ -11,14 +13,15 @@ class Server:
         self.sel = selectors.DefaultSelector()
         self.host = host
         self.port = port
+        self.recieved_messages = []
 
 
     def accept_wrapper(self, sock):
         conn, addr = sock.accept()  # Should be ready to read
         print("accepted connection from", addr)
         conn.setblocking(False)
-        message = libserver.Message(self.sel, conn, addr)
-        self.sel.register(conn, selectors.EVENT_READ, data=message)
+        self.message = libserver.Message(self.sel, conn, addr)
+        self.sel.register(conn, selectors.EVENT_READ, data=self.message)
 
 
     
@@ -31,6 +34,7 @@ class Server:
         print("listening on", (self.host, self.port))
         lsock.setblocking(False)
         self.sel.register(lsock, selectors.EVENT_READ, data=None)
+        
 
         try:
             while True:
@@ -39,16 +43,49 @@ class Server:
                     if key.data is None:
                         self.accept_wrapper(key.fileobj)
                     else:
-                        message = key.data
+                        self.message = key.data
+          
+                        
                         try:
-                            message.process_events(mask)
+                            self.message.process_events(mask)
+                            print(self.message.request)
+                            
                         except Exception:
                             print(
                                 "main: error: exception for",
-                                f"{message.addr}:\n{traceback.format_exc()}",
+                                f"{self.message.addr}:\n{traceback.format_exc()}",
                             )
-                            message.close()
+                            
+                            self.message.close()
+                    data = self.message.getMessage()
+                    self.recieved_messages.append(data)
+
+                            
+                            
+                            
+                            
+       
+        
         except KeyboardInterrupt:
             print("caught keyboard interrupt, exiting")
         finally:
             self.sel.close()
+
+    def incomingData(self):
+        while True:
+            for info in self.recieved_messages:
+                print('DATA' + str(info))
+
+            
+
+
+
+
+
+
+
+
+
+
+
+
