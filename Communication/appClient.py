@@ -5,7 +5,6 @@ import traceback
 
 from Communication import libclient
 
-
 class Client:
     def __init__(self):
         self.sel = selectors.DefaultSelector()
