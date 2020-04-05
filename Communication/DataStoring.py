@@ -2,6 +2,7 @@ import ast
 import socket
 import os
 from firebase import Firebase
+import json
 
 
 
@@ -26,6 +27,24 @@ class FirebaseConnection:
             for line in EndpointsData:
                 line = line.strip()
                 self.ListOfNodeIPs.append(line)
+
+    def ConvertToDict(self):
+        self.NodesEndpoints = self.ListOfNodeIPs.copy()
+        self.Nodes = []
+        for string in self.NodesEndpoints:
+            
+            try:
+                dictionary = eval(string)
+                self.Nodes.append(dictionary)
+            
+            except:
+                self.ListOfNodeIPs.remove(string)
+
+        self.ListOfNodeIPs = self.Nodes.copy()
+        
+        
+
+            
 
     def findEndpoints(self):
         if os.stat('Endpoints.txt').st_size == 0:
@@ -57,7 +76,9 @@ class FirebaseConnection:
             
 
         self.ReadStorage()
-        print(self.ListOfNodeIPs)
+        self.ConvertToDict()
+        
+        
 
         
 
