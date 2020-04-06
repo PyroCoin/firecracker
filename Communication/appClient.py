@@ -61,21 +61,22 @@ class Client(asyncio.Protocol):
 
 
 
-def ClientFunction(host, port):
+def ClientFunction(message, host, port):
     theClient = Client()
-
-    theClient.send('HELLO!', host, port)
-    print('hello')
-
-async def connect_to_server(loop, server_host, server_port):
     try:
-        await loop.create_connection(ClientFunction(server_host, server_port))
+        theClient.send(message, host, port)
+    except:
+        pass
+
+async def connect_to_server(loop, message, server_host, server_port):
+    try:
+        await loop.create_connection(message ,ClientFunction(server_host, server_port))
     except ValueError:
         pass
     
 
 
-def main():
+def Clientmain(message):
     ServerNodeData = FirebaseConnection()
     ServerNodeData.findEndpoints()
 
@@ -85,13 +86,10 @@ def main():
         try:
             serverIP = data['IP']
             serverPort = data['PORT']
-            loop.create_task(connect_to_server(loop, serverIP, serverPort))
+            loop.create_task(connect_to_server(loop, message, serverIP, serverPort))
 
         except:
             pass
-
-        
-
 
     loop.run_until_complete(connect_to_server(loop, serverIP, serverPort))
     

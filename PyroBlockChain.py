@@ -7,6 +7,11 @@ from ecdsa import BadSignatureError
 from flask import Flask, jsonify, request
 import ecdsa
 from datetime import datetime
+import threading
+
+from Communication.DataStoring import FirebaseConnection
+from Communication.appClient import main
+from Communication.appServer import Server 
 
 
 def verify_signature(signature, text, public_key):
@@ -79,10 +84,6 @@ class Blockchain:
             last_block = block
             current_index += 1
          
-                
-
-        
-
         return True
 
 
@@ -101,6 +102,7 @@ class Blockchain:
         except:
             pass
 
+
     def validTransactions(self, currentTransactions, recievedTransactions):
         try:
             if len(recievedTransactions) > len(currentTransactions):
@@ -113,32 +115,14 @@ class Blockchain:
                 pass
 
 
-
-    def find_data_type(self, recievedData):
-        try:
-            if len(recievedData) == 0:
-                pass
-            else:
-                if type(recievedData) is list:  
-                    with recievedData[0] as information:
-                        if 'IP' in information:
-                            if 'PORT' in information:
-                                self.dataType = 'NodeEndpoints'               
-                else:
-                    if '0' in recievedData:
-                        self.dataType = 'Userlist'
-
-                    elif 'Current Transactions' in recievedData:
-                        self.dataType = 'Transactions' 
-                    
-
         except:
             pass
 
-
-                        
-
-                        
+        try: 
+            self.current_transactions.sort(key=lambda d: d['timestamp'])
+        except:
+            pass
+     
 
     def resolve_conflicts(self):
         """
@@ -243,7 +227,7 @@ class Blockchain:
             }
 
 
-            self.Transactions = {'Current Transactions': self.current_transactions, 'Verified Transactions': self.verifiedTransactions}
+            
 
             # Reset the current list of transactions 
             self.current_transactions = []
@@ -253,6 +237,13 @@ class Blockchain:
             
             self.chain.append(block)
             return block
+
+
+            self.Data = {'Current Transactions': self.current_transactions, 'Verified Transactions': self.verifiedTransactions, 'Chain': self.chain, 'Users': self.users}
+            main(self.Data)
+
+
+
 
     def new_transaction(self, sender, recipient, amount):
         """
@@ -426,11 +417,6 @@ def register_nodes():
 @app.route('/users', methods=['GET'])
 def users():
     return str(blockchain.users)
-
-
-
-
-        
     
 
 
