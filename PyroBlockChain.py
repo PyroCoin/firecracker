@@ -249,7 +249,7 @@ FirebaseStorage = FirebaseConnection()
 RecieverServer = Server() 
 
 
-@app.route('/mine', methods=['GET'])
+
 def mine():
     # We run the proof of work algorithm to get the next proof...
     last_block = blockchain.last_block
@@ -274,66 +274,33 @@ def mine():
         'proof': block['proof'],
         'previous_hash': block['previous_hash'],
     }
-    return jsonify(response), 200
+    
 
 
-@app.route('/transactions/new', methods=['POST'])
-def new_transaction():
-    values = request.get_json(force=True)
 
+def new_transaction(TransactionData):
     # Check that the required fields are in the POST'ed data
     required = ['signature', 'sender', 'recipient', 'amount']
     if not all(k in values for k in required):
-        return 'Missing values', 400
+        return 'Missing values'
 
     unsigned_transaction_format = f"{values['sender']} -{values['amount']}-> {values['recipient']}"
 
     # Verify signature is valid
     if not verify_signature(values['signature'], unsigned_transaction_format, values['sender']):
-        return 'Your signature does not verify your transaction', 401
+        return 'Your signature does not verify your transaction'
 
     
 
     # Create a new Transaction
     index = blockchain.new_transaction(values['sender'], values['recipient'], values['amount'])
 
-    response = {'message': f'Transaction will be added to Block {index}'}
-    return jsonify(response), 201
 
 
-@app.route('/chain', methods=['GET'])
 def full_chain():
-    replaced = blockchain.resolve_conflicts()
+    return(blockchain.chain)
 
-    if replaced:
-        print("Our chain was updated and was replaced with one of a chain from one of our peer nodes")
-    else:
-        print("Our chain was appears to be up to date")
-    response = {
-        'chain': blockchain.chain,
-        'length': len(blockchain.chain),
-    }
-    return jsonify(response), 200
-
-
-@app.route('/nodes/register', methods=['POST'])
-def register_nodes():
-    values = request.get_json()
-
-    nodes = values.get('nodes')
-    if nodes is None:
-        return "Error: Please supply a valid list of nodes", 400
-
-    for node in nodes:
-        blockchain.register_node(node)
-
-    response = {
-        'message': 'New nodes have been added',
-        'total_nodes': list(blockchain.nodes),
-    }
-    return jsonify(response), 201
-
-@app.route('/users', methods=['GET'])
+    
 def users():
     return str(blockchain.users)
     
