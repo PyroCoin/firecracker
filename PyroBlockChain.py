@@ -10,7 +10,7 @@ from datetime import datetime
 import threading
 
 from Communication.DataStoring import FirebaseConnection
-from Communication.appClient import main
+from Communication.appClient import Clientmain
 from Communication.appServer import Server 
 
 
@@ -43,119 +43,33 @@ class Blockchain:
         # Create the genesis block
         self.new_block(previous_hash='1', proof=100)
 
-    def register_node(self, address):
-        """
-        Add a new node to the list of nodes
-        :param address: Address of node. Eg. 'http://192.168.0.5:5000'
-        """
-
-        parsed_url = urlparse(address)
-        if parsed_url.netloc:
-            self.nodes.add(parsed_url.netloc)
-        elif parsed_url.path:
-            # Accepts an URL without scheme like '192.168.0.5:5000'.
-            self.nodes.add(parsed_url.path)
-        else:
-            raise ValueError('Invalid URL')
-
-    def valid_chain(self, chain):
-        """
-        Determine if a given blockchain is valid
-        :param chain: A blockchain
-        :return: True if valid, False if not
-        """
-
-        last_block = chain[0]
-        current_index = 1
-        while current_index < len(chain):
-            block = chain[current_index]
-            print(f'{last_block}')
-            print(f'{block}')
-            print("\n-----------\n")
-            # Check that the hash of the block is correct
-            last_block_hash = self.hash(last_block)
-            if block['previous_hash'] != last_block_hash:
-                return False
-
-            # Check that the Proof of Work is correct
-            if not self.valid_proof(last_block['proof'], block['proof'], last_block_hash):
-                return False
-
-            last_block = block
-            current_index += 1
-         
-        return True
-
-
-    def valid_users(self, userList, recievedUserList):
-        try:
-            if len(recievedUserList) > len(userList):
+    def CheckNewData(self, data_list):
+        for data in data_list:
+            try:
                 
+                Chain = data.get('Chain')
+                Transactions = data.get('Current Transactions')
+                Users = Users.get('Users')
 
-                for user in RecievedUserList:
-                    if user not in userList:
-                        userList.append(user)
+
+
+                if len(Chain) > len(self.chain) and len(Users) > len(self.users):
+                    self.chain = Chain
+                    self.current_transactions = Transactions
+                    self.users = Users
+                    self.current_transactions.sort(key=lambda d: d['timestamp'])
+
+                else:
+                    if len(Transactions) != 0:
+                        for Transaction in Transaction:
+                            if Transaction not in self.current_transactions:
+                                self.current_transactions.append(Transaction)
+                        self.current_transactions.sort(key=lambda d: d['timestamp'])
+
                     else:
                         pass
-            else:
-                pass
-        except:
-            pass
 
 
-    def validTransactions(self, currentTransactions, recievedTransactions):
-        try:
-            if len(recievedTransactions) > len(currentTransactions):
-                for transaction in recievedTransactions:
-                    if transaction not in currentTransactions:
-                        currentTransactions.append(transaction)
-                    else:
-                        pass
-            else:
-                pass
-
-
-        except:
-            pass
-
-        try: 
-            self.current_transactions.sort(key=lambda d: d['timestamp'])
-        except:
-            pass
-     
-
-    def resolve_conflicts(self):
-        """
-        This is our consensus algorithm, it resolves conflicts
-        by replacing our chain with the longest one in the network.
-        :return: True if our chain was replaced, False if not
-        """
-
-        neighbours = self.nodes
-        new_chain = None
-
-        # We're only looking for chains longer than ours
-        max_length = len(self.chain)
-
-        # Grab and verify the chains from all the nodes in our network
-        for node in neighbours:
-            response = requests.get(f'http://{node}/chain')
-
-            if response.status_code == 200:
-                length = response.json()['length']
-                chain = response.json()['chain']
-
-                # Check if the length is longer and the chain is valid
-                if length > max_length and self.valid_chain(chain):
-                    max_length = length
-                    new_chain = chain
-
-        # Replace our chain if we discovered a new, valid chain longer than ours
-        if new_chain:
-            self.chain = new_chain
-            return True
-
-        return False
 
     def new_block(self, proof, previous_hash):
         """
@@ -240,7 +154,7 @@ class Blockchain:
 
 
             self.Data = {'Current Transactions': self.current_transactions, 'Verified Transactions': self.verifiedTransactions, 'Chain': self.chain, 'Users': self.users}
-            main(self.Data)
+            Clientmain(self.Data)
 
 
 
@@ -267,6 +181,9 @@ class Blockchain:
             'transaction_id': transaction_id,
             'timestamp': timestamp 
         })
+
+        self.Data = {'Current Transactions': self.current_transactions, 'Verified Transactions': self.verifiedTransactions, 'Chain': self.chain, 'Users': self.users}
+        Clientmain(self.Data)
 
         return self.last_block['index'] + 1
 
@@ -328,6 +245,8 @@ node_public_key = 1
 
 # Instantiate the Blockchain
 blockchain = Blockchain()
+FirebaseStorage = FirebaseConnection()
+RecieverServer = Server() 
 
 
 @app.route('/mine', methods=['GET'])
