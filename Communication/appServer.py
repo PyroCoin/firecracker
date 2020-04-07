@@ -72,8 +72,7 @@ class Server:
             self.sel.close()
 
     def incomingData(self):
-        while True:
-            self.listClone = self.recieved_messages.copy()
+        return self.recieved_messages
             
             
 

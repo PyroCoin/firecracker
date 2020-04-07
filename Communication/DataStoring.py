@@ -29,17 +29,15 @@ class FirebaseConnection:
                 self.ListOfNodeIPs.append(line)
 
     def ConvertToDict(self):
-        self.NodesEndpoints = self.ListOfNodeIPs.copy()
+        self.NodesSockets = self.ListOfNodeIPs.copy()
         self.Nodes = []
-        for string in self.NodesEndpoints:
-            
+        for string in self.NodesSockets:
             try:
                 dictionary = eval(string)
                 self.Nodes.append(dictionary)
             
             except:
                 self.ListOfNodeIPs.remove(string)
-
         self.ListOfNodeIPs = self.Nodes.copy()
         
         
@@ -78,12 +76,6 @@ class FirebaseConnection:
         self.ReadStorage()
         self.ConvertToDict()
         
-        
-
-        
-
-
-
 
 
 
