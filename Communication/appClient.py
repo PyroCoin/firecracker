@@ -70,7 +70,7 @@ def ClientFunction(message, host, port):
 
 async def connect_to_server(loop, message, server_host, server_port):
     try:
-        await loop.create_connection(message ,ClientFunction(server_host, server_port))
+        ClientFunction(message, server_host, server_port)
     except ValueError:
         pass
     
@@ -91,6 +91,6 @@ def Clientmain(message):
         except:
             pass
 
-    loop.run_until_complete(connect_to_server(loop, serverIP, serverPort))
+    loop.run_until_complete(connect_to_server(loop, message, serverIP, serverPort))
     
             
