@@ -8,11 +8,17 @@ from flask import Flask, jsonify, request
 import ecdsa
 from datetime import datetime
 import threading
+import tkinter as tk
+from tkinter.ttk import *
+import time
+from functools import partial
+from uuid import uuid4
 
 from Communication.DataStoring import FirebaseConnection
 from Communication.appClient import Clientmain
 from Communication.appServer import Server 
 
+UI_Style = Style()
 
 def verify_signature(signature, text, public_key):
     try:
@@ -31,13 +37,26 @@ def verify_signature(signature, text, public_key):
 
 class Blockchain:
     def __init__(self):
+        Current_UTC_Time = datetime.utcnow()
+        timestamp = int(str(Current_UTC_Time.year) + str(Current_UTC_Time.month) + str(Current_UTC_Time.day) + str(Current_UTC_Time.hour) + str(Current_UTC_Time.minute) + str(Current_UTC_Time.second) + str(Current_UTC_Time.microsecond))
+        
+        self.genesisBlock = {
+                'index': 1,
+                'timestamp': timestamp,
+                'transactions': [],
+                'proof': 100,
+                'previous_hash': 1,
+            }
         self.current_transactions = []
-        self.chain = []
+        self.chain = [self.genesisBlock]
         self.nodes = set()
         self.users = {'0': 250000000}
         self.transactionsCheck = []
         self.verifiedTransactions = []
         self.Transactions = {}
+        self.Mine_Prize = 64 
+        
+        
 
 
         # Create the genesis block
@@ -58,6 +77,11 @@ class Blockchain:
                     self.current_transactions = Transactions
                     self.users = Users
                     self.current_transactions.sort(key=lambda d: d['timestamp'])
+                    if len(Transactions) != 0:
+                        for Transaction in Transaction:
+                            if Transaction not in self.current_transactions:
+                                self.current_transactions.append(Transaction)
+                        self.current_transactions.sort(key=lambda d: d['timestamp'])
 
                 else:
                     if len(Transactions) != 0:
@@ -66,8 +90,14 @@ class Blockchain:
                                 self.current_transactions.append(Transaction)
                         self.current_transactions.sort(key=lambda d: d['timestamp'])
 
-                    else:
-                        pass
+                        for user in Users():
+                            if user not in self.users:
+                                self.users.append(user)
+
+
+
+            except:
+                pass
 
 
 
@@ -132,9 +162,13 @@ class Blockchain:
 
             self.current_transactions = self.transactionsCheck.copy()
 
+
+            Current_UTC_Time = datetime.utcnow()
+            timestamp = int(str(Current_UTC_Time.year) + str(Current_UTC_Time.month) + str(Current_UTC_Time.day) + str(Current_UTC_Time.hour) + str(Current_UTC_Time.minute) + str(Current_UTC_Time.second) + str(Current_UTC_Time.microsecond))
+        
             block = {
                 'index': len(self.chain) + 1,
-                'timestamp': time(),
+                'timestamp': timestamp,
                 'transactions': self.current_transactions,
                 'proof': proof,
                 'previous_hash': previous_hash or self.hash(self.chain[-1]),
@@ -233,7 +267,14 @@ class Blockchain:
 
         guess = f'{last_proof}{proof}{last_hash}'.encode()
         guess_hash = hashlib.sha256(guess).hexdigest()
-        return guess_hash[:5] == "00000"
+        return guess_hash[:7] == "0000000"
+
+    
+    def polishChainDisplay(chain):
+        pass
+
+
+
 
 
 # Instantiate the Node
@@ -246,7 +287,7 @@ node_public_key = 1
 # Instantiate the Blockchain
 blockchain = Blockchain()
 FirebaseStorage = FirebaseConnection()
-RecieverServer = Server() 
+RecieverServer = Server('', 5050) 
 
 
 
@@ -260,7 +301,7 @@ def mine():
     blockchain.new_transaction(
         sender="0",
         recipient=node_public_key,
-        amount=1,
+        amount=blockchain.Mine_Prize,
     )
 
     # Forge the new Block by adding it to the chain
@@ -278,23 +319,27 @@ def mine():
 
 
 
-def new_transaction(TransactionData):
+def new_transaction(TransactionData, root):
+    values = TransactionData
     # Check that the required fields are in the POST'ed data
     required = ['signature', 'sender', 'recipient', 'amount']
     if not all(k in values for k in required):
-        return 'Missing values'
+        MissingValues = tk.Label(root, text='Missing values')
+        MissingValues.pack()
 
     unsigned_transaction_format = f"{values['sender']} -{values['amount']}-> {values['recipient']}"
 
     # Verify signature is valid
     if not verify_signature(values['signature'], unsigned_transaction_format, values['sender']):
-        return 'Your signature does not verify your transaction'
+        badSignature = tk.Label(root, text='Your signature does not verify your transaction')
+        badSignature.pack()
 
-    
+    try:
+        # Create a new Transaction
+        blockchain.new_transaction(TransactionData.get('sender'), TransactionData.get('recipient'), TransactionData.get('amount'), root)
 
-    # Create a new Transaction
-    index = blockchain.new_transaction(values['sender'], values['recipient'], values['amount'])
-
+    except:
+        pass
 
 
 def full_chain():
@@ -303,19 +348,212 @@ def full_chain():
     
 def users():
     return str(blockchain.users)
+
+class PyroInterface(tk.Frame):
+    def __init__(self, userKey, privateKey, root):
+        self.userKey = userKey
+        self.privateKey = privateKey
+        tk.Frame.__init__(self, root)
+        root.winfo_toplevel().title('PyroCoin Full Node')
+
+        Welcome = tk.Message(root, text='Welcome to the Pyrocoin Full Node Service. As a full node, you will help manage the Blockchain by verifying payments and handling requests. The reward for this hard work will be newly generated PyroCoin!')
+        Welcome.pack()
+
+        LoginBTN = tk.Button(root, text='Enter A Public and Private Key', command=self.Login)
+        LoginBTN.pack()
+
+        NewKeys = tk.Button(root, text='Generate a new Public and Private Key', command=self.Signup)
+        NewKeys.pack()
+
+
+    def remove(self):
+        for widget in root.winfo_children():
+            widget.destroy()
+        
+    def GoBack(self):
+        backBTN = tk.Button(root, text='Back', command=self.main)
+        backBTN.pack()
+
+    def Welcome(self):
+        for widget in root.winfo_children():
+            widget.destroy()
+        Welcome = tk.Message(root, text='Welcome to the Pyrocoin Full Node Service. As a full node, you will help manage the Blockchain by verifying payments and handling requests. The reward for this hard work will be newly generated PyroCoin!')
+        Welcome.pack()
+
+        LoginBTN = tk.Button(root, text='Enter A Public and Private Key', command=self.Login)
+        LoginBTN.pack()
+
+        NewKeys = tk.Button(root, text='Generate a new Public and Private Key', command=self.Signup)
+        NewKeys.pack()
+
+
+    def Login(self):
+        for widget in root.winfo_children():
+            widget.destroy()
+        PublicKeyMessage = tk.Message(root, text='Public Key')
+        PublicKeyMessage.pack()
+        PublicKey = tk.Text(root, height=1, width=50)
+        PublicKey.pack()
+                
+                
+        PrivateKeyMessage = tk.Message(root, text='Private Key')
+        PrivateKeyMessage.pack()
+        PrivateKey = tk.Text(root, height=1, width=50)
+        PrivateKey.pack()
+
+        UserPrivate = PrivateKey.get('1.0', 'end')
+        UserPublic = PublicKey.get('1.0', 'end')
+
+        SubmitBTN = tk.Button(root, text='Submit', command=self.CheckData(UserPrivate, UserPublic))
+
+
+    def Signup(self):
+        for widget in root.winfo_children():
+            widget.destroy()
+        KeepSafe = tk.Message(root, text='These are your new keys. Please keep these safe. If someone were to steal this, they would be able to take away all your PyroCoin!')
+        YourNewPublicKey = tk.Label(root, text=str('Your new public key is ' + str(self.userKey)))
+        YourNewPrivateKey = tk.Label(root, text='Your new private key is ' + str(self.privateKey.decode()))
+        
+        YourNewPublicKey.pack()
+        YourNewPrivateKey.pack()
+        KeepSafe.pack()
+        
+        backBTN = tk.Button(root, text='Continue', command=self.main)
+        backBTN.pack()
+
+    def CheckData(self, privateKey, publicKey):
+        if hashlib.sha256(privateKey.encode()) == publicKey:
+            for widget in root.winfo_children():
+                widget.destroy()
+            Approved = tk.Message(root, text='Your private and public keys are valid!')
+            Approved.pack()
+            backBTN = tk.Button(root, text='Continue', command=self.main)
+            backBTN.pack()
+
+        else:
+            NotApproved = tk.Message(root, text='Your public and/or private keys are incorrect!')
+            NotApproved.pack()
+            backBTN = tk.Button(root, text='Back', command=self.Welcome)
+            backBTN.pack()
+
+
+
+    def mineBlocks(self):
+        for widget in root.winfo_children():
+            widget.destroy()
+
+        Mining = tk.Label(root, text='Please wait while PyroCoin is mined, this may take a while!')
+        Mining.pack()
+        mine()
+        Mining.pack_forget()
+        label2 = tk.Label(root, text=str('The Block has been mined, you have gained ' + str(blockchain.Mine_Prize) + ' Pyrocoin!'))
+        label2.pack()
+        self.GoBack()
+
+    def mine(self):
+        for widget in root.winfo_children():
+            widget.destroy()
+
+        StartMine = tk.Button(root, text='Mine Block', command=self.mineBlocks)
+        MineWarning = tk.Message(root, text='Warning! Mining may take some time!')
+        StartMine.pack()
+        MineWarning.pack()
+        self.GoBack()
+
+
+
+    def users(self):       
+        for widget in root.winfo_children():
+            widget.destroy()
+        users = tk.Label(root, text=blockchain.users)
+        users.pack()
+        self.GoBack()
+        
+
+    def full_chain(self):
+        for widget in root.winfo_children():
+            widget.destroy()
+        entireChain = tk.Message(root, text=blockchain.chain)
+        entireChain.pack()
+
+        self.GoBack()
+
     
+    
+    def new_transactions(self):
+        for widget in root.winfo_children():
+            widget.destroy()
+
+
+        Recipient_Them = tk.Label(root, text='Recipient')  
+        Recipient_Them.pack()
+
+        Recipient = tk.Text(root, height=1, width=50)
+        Recipient.pack()
+
+        AmountData = tk.Label(root, text='Amount')  
+        AmountData.pack()
+
+        Amount = tk.Text(root, height=1, width=50)
+        Amount.pack()
+
+        SignatureData = tk.Label(root, text='Signature')  
+        SignatureData.pack()
+        
+        Signature = tk.Text(root, height=1, width=50)
+        Signature.pack()
+
+        
+        recipient =  Recipient.get("1.0",'end')
+        amount = Amount.get('1.0', 'end')
+        signature = Signature.get('1.0', 'end')
+        sender = self.userKey
+
+        DictionaryData = {'sender': sender, 'recipient': recipient, 'signature': signature, 'amount': amount}
+
+
+        btn_submit = tk.Button(root, text="Submit", command= lambda: new_transaction(DictionaryData, root))
+        btn_submit.pack()
+
+        self.GoBack()
+
+
+
+    
+    def main(self):
+        for widget in root.winfo_children():
+            widget.destroy()
+
+        btn_users = tk.Button(root, text='Users', command=self.users)
+        btn_fullChain = tk.Button(root, text='Chain', command=self.full_chain)
+        btn_newTransaction = tk.Button(root, text='New Transaction', command=self.new_transactions)
+        btn_mine = tk.Button(root, text="Mine A Block", command = self.mine)
+
+        btn_fullChain.pack()
+        btn_users.pack()
+        btn_newTransaction.pack()
+        btn_mine.pack()
+        
+        
+        
+        
+        
+        
+
+        
+        
 
 
 if __name__ == '__main__':
     from argparse import ArgumentParser
 
+    root = tk.Tk()
     parser = ArgumentParser()
-    parser.add_argument('-p', '--port', default=5000, type=int, help='port to listen on')
-    parser.add_argument('-key', '--nodeKey', default="0", type=str, help='key for this node')
-    args = parser.parse_args()
-    port = args.port
 
-    node_public_key = args.nodeKey
+
+    node_privateKey = uuid4()
+    privateKey = str(uuid4()).replace('-', '').encode()
+    node_public_key = hashlib.sha256(privateKey).hexdigest()
 
     if node_public_key == "0":
         raise ValueError("You must specify a node key!")
@@ -323,6 +561,13 @@ if __name__ == '__main__':
 
     print(node_public_key)
 
+    UI = PyroInterface(node_public_key, privateKey, root)
+
+
+    UI.pack(side="top", fill="both", expand=True)
+    root.mainloop()
+    
+
   
-    app.run(host='0.0.0.0', port=port)
+
 
