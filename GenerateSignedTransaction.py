@@ -1,31 +1,35 @@
 from json import dumps
-
+import hashlib
 from ecdsa import SigningKey, SECP256k1
 import json
 
-if __name__ == '__main__':
-    from argparse import ArgumentParser
+    
 
-    parser = ArgumentParser()
-    parser.add_argument('-s', '--sender', default="ignore", type=str, help="sender private key")
-    parser.add_argument('-r', '--recipient', default="ignore", type=str, help='recipient public key')
-    parser.add_argument('-a', '--amount', default=200, type=int, help='amount to send')
 
-    args = parser.parse_args()
 
-    if args.sender != "ignore":
-        sender = SigningKey.from_string(bytes.fromhex(args.sender), curve=SECP256k1)
+def CreateSignature(senderPrivateKey, sender, recipient, amount):
+    senderPrivateKey.replace(' ', '')
+    sender.replace(' ', '')
+    recipient.replace(' ', '')
+    amount.replace(' ', '')
+    HashedPrivateKey = str(hashlib.sha256(senderPrivateKey.encode()).hexdigest())
+
+
+    if HashedPrivateKey == sender:
+        sender = SigningKey.from_string(bytes.fromhex(sender), curve=SECP256k1)
         s_pub_key = sender.get_verifying_key().to_string().hex()
-    else:
-        sender = SigningKey.generate(curve=SECP256k1)
-        s_pub_key = sender.get_verifying_key().to_string().hex()
 
-    if args.recipient != "ignore":
-        r_pub_key = recipient = args.recipient
-    else:
-        recipient = SigningKey.generate(curve=SECP256k1)
-        r_pub_key = recipient.get_verifying_key().to_string().hex()
 
-    transaction = {'sender': s_pub_key, 'recipient': r_pub_key, 'amount': args.amount,
-                   'signature': sender.sign(f"{s_pub_key} -{args.amount}-> {r_pub_key}".encode()).hex()}
-    print(json.dumps(transaction))
+
+        r_pub_key = recipient = recipient
+
+        transaction = {'sender': s_pub_key, 'recipient': r_pub_key, 'amount': amount,
+                        'signature': sender.sign(f"{s_pub_key} -{amount}-> {r_pub_key}".encode()).hex()}
+
+                
+        return sender.sign(f"{s_pub_key} -{amount}-> {r_pub_key}".encode()).hex()
+
+    else: 
+        return 'Incorrect Data'
+
+

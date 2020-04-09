@@ -327,17 +327,24 @@ def mine():
 def new_transaction(TransactionData, root):
     #DictionaryData = {'sender': sender, 'recipient': recipient, 'amount': amount, 'PrivateKey': privKey}
 
-
-
     signature = CreateSignature(TransactionData.get('PrivateKey'), TransactionData.get('sender'), TransactionData.get('recipient'), TransactionData.get('amount'))
+    print(signature)
 
     if signature == 'Incorrect Data':
-        Error = tk.Label(root, text='Incorrect Data')
-        Error.pack()
+        try:
+            Error.destroy()
+            Error = tk.Label(root, text='Incorrect Data')
+            Error.pack()
+        except:
+            Error = tk.Label(root, text='Incorrect Data')
+            Error.pack()
+
+
+
+
 
     else:
-        TransactionDataDict = {'sender': TransactionData.get('sender'), 'Recipient': TransactionData.get('recipient'), 'Amount': TransactionData.get('amount'), 'Signature': signature}
-
+        TransactionDataDict = {'sender': TransactionData.get('sender'), 'recipient': TransactionData.get('recipient'), 'amount': TransactionData.get('amount'), 'signature': signature}
         values = TransactionDataDict
         # Check that the required fields are in the POST'ed data
         required = ['signature', 'sender', 'recipient', 'amount']
@@ -377,7 +384,7 @@ class PyroInterface(tk.Frame):
         Welcome = tk.Message(root, text='Welcome to the Pyrocoin Full Node Service. As a full node, you will help manage the Blockchain by verifying payments and handling requests. The reward for this hard work will be newly generated PyroCoin!')
         Welcome.pack()
 
-        LoginBTN = tk.Button(root, text='Enter A Public and Private Key', command=self.Login)
+        LoginBTN = tk.Button(root, text='Enter A Private Key to Login', command=self.Login)
         LoginBTN.pack()
 
         NewKeys = tk.Button(root, text='Generate a new Public and Private Key', command=self.Signup)
@@ -398,7 +405,7 @@ class PyroInterface(tk.Frame):
         Welcome = tk.Message(root, text='Welcome to the Pyrocoin Full Node Service. As a full node, you will help manage the Blockchain by verifying payments and handling requests. The reward for this hard work will be newly generated PyroCoin!')
         Welcome.pack()
 
-        LoginBTN = tk.Button(root, text='Enter A Public and Private Key', command=self.Login)
+        LoginBTN = tk.Button(root, text='Enter A Private Key to Login', command=self.Login)
         LoginBTN.pack()
 
         NewKeys = tk.Button(root, text='Generate a new Public and Private Key', command=self.Signup)
@@ -430,7 +437,7 @@ class PyroInterface(tk.Frame):
         YourNewPublicKey.pack()
 
         YourNewPrivateKey = tk.Text(root, height=1, width=100, borderwidth=0)
-        YourNewPrivateKey.insert(1.0, str('Your new private key is ' + str(self.privateKey.decode())))
+        YourNewPrivateKey.insert(1.0, str('Your new private key is ' + str(self.privateKey)))
         YourNewPrivateKey.pack()
         
         
@@ -442,13 +449,14 @@ class PyroInterface(tk.Frame):
     def CheckData(self):
         priv = self.PrivateKeyText.get('1.0', 'end-1c')
         if len(priv) != 32:
-            IncorrectLength = tk.Label(root, text='Incorrect Private Key')
-            backBTN = tk.Button(root, text='Back', command=self.Welcome)
-            
             for widget in root.winfo_children():
                 widget.destroy()
             
+            IncorrectLength = tk.Label(root, text='Incorrect Private Key')
             IncorrectLength.pack()
+            backBTN = tk.Button(root, text='Back', command=self.Welcome)
+            
+            
             backBTN.pack()
         
         else:
@@ -456,13 +464,7 @@ class PyroInterface(tk.Frame):
             for string in privList:
                 if string == ' ':
                     del(privList[privList.index(string)])
-
-
-            
-
             pub = sha256(priv.encode()).hexdigest()
-
-
 
             
             for widget in root.winfo_children():
@@ -475,6 +477,7 @@ class PyroInterface(tk.Frame):
             ContBTN.pack()
             backBTN = tk.Button(root, text='Back', command=self.Welcome)
             backBTN.pack()
+            self.userKey = pub
 
     
 
@@ -531,36 +534,43 @@ class PyroInterface(tk.Frame):
 
         Recipient_Them = tk.Label(root, text='Recipient')  
         Recipient_Them.pack()
-
-        Recipient = tk.Text(root, height=1, width=50)
-        Recipient.pack()
+        self.Recipient = tk.Text(root, height=1, width=50)
+        self.Recipient.pack()
 
         AmountData = tk.Label(root, text='Amount')  
         AmountData.pack()
-
-        Amount = tk.Text(root, height=1, width=50)
-        Amount.pack()
+        self.Amount = tk.Text(root, height=1, width=50)
+        self.Amount.pack()
 
         privateKeyLab = tk.Label(root, text='Your Private Key')  
         privateKeyLab.pack()
-        
-        privateKey = tk.Text(root, height=1, width=50)
-        privateKey.pack()
-
-        
-        privKey =  privateKey.get("1.0",'end-1c')
-        amount = Amount.get('1.0', 'end-1c')
-        signature = Signature.get('1.0', 'end-1c')
-        sender = self.userKey
+        self.privateKey = tk.Text(root, height=1, width=50)
+        self.privateKey.pack()
 
 
-        DictionaryData = {'sender': sender, 'recipient': recipient, 'amount': amount, 'PrivateKey': privKey}
 
-
-        btn_submit = tk.Button(root, text="Submit", command= lambda: new_transaction(DictionaryData, root))
+        btn_submit = tk.Button(root, text="Submit", command=self.getAndUseData)
         btn_submit.pack()
 
-        self.GoBack()
+    def getAndUseData(self):
+        privKey =  self.privateKey.get("1.0",'end-1c')
+        amount = self.Amount.get('1.0', 'end-1c')
+        recipient = self.Recipient.get('1.0', 'end-1c')
+        sender = self.userKey
+
+        print(privKey)
+        print(amount)
+        print(recipient)
+        print(sender)
+        
+        DictData = {'sender': sender, 'recipient': recipient, 'amount': amount, 'PrivateKey': privKey}
+        
+        new_transaction(DictData, root)
+
+        
+            
+
+        
     
     def main(self):
         for widget in root.winfo_children():
@@ -575,14 +585,10 @@ class PyroInterface(tk.Frame):
         btn_users.pack()
         btn_newTransaction.pack()
         btn_mine.pack()
-        
-        
-        
-        
-        
-        
+
 
         
+    
         
 
 
@@ -593,9 +599,12 @@ if __name__ == '__main__':
     parser = ArgumentParser()
 
 
-    node_privateKey = uuid4()
+    
     privateKey = str(uuid4()).replace('-', '').encode()
     node_public_key = hashlib.sha256(privateKey).hexdigest()
+    privateKey = privateKey.decode()
+
+
 
     if node_public_key == "0":
         raise ValueError("You must specify a node key!")
