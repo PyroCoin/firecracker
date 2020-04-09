@@ -14,30 +14,27 @@ import time
 from functools import partial
 from uuid import uuid4
 from hashlib import sha256
+import binascii
+import os
 
 from GenerateSignedTransaction import CreateSignature
 
 from Communication.DataStoring import FirebaseConnection
 from Communication.appClient import Clientmain
 from Communication.appServer import Server 
+import requests
 
 
 
 UI_Style = Style()
 
 def verify_signature(signature, text, public_key):
-    try:
-        vk = ecdsa.VerifyingKey.from_string(bytes.fromhex(public_key), curve=ecdsa.SECP256k1)
-        try:
-            vk.verify(bytes.fromhex(signature), text.encode())
-            return True
-        except BadSignatureError:
-            return False
+    url = 'https://crows.sh/verifySignature'
+    body = {'signature': signature, "transactionRepresentation": text, "publicKey": public_key}
 
-    except ValueError:
-        return False
+    x = requests.post(url, data=body)
 
-
+    return x.json()["valid_signature"]
 
 
 class Blockchain:
@@ -448,16 +445,7 @@ class PyroInterface(tk.Frame):
 
     def CheckData(self):
         priv = self.PrivateKeyText.get('1.0', 'end-1c')
-        if len(priv) != 32:
-            for widget in root.winfo_children():
-                widget.destroy()
-            
-            IncorrectLength = tk.Label(root, text='Incorrect Private Key')
-            IncorrectLength.pack()
-            backBTN = tk.Button(root, text='Back', command=self.Welcome)
-            
-            
-            backBTN.pack()
+        
         
         else:
             privList = list(priv)
@@ -598,11 +586,16 @@ if __name__ == '__main__':
     root = tk.Tk()
     parser = ArgumentParser()
 
+    
+
+
 
     
-    privateKey = str(uuid4()).replace('-', '').encode()
-    node_public_key = hashlib.sha256(privateKey).hexdigest()
-    privateKey = privateKey.decode()
+    privateKey = os.urandom(32)
+    sk = ecdsa.SigningKey.from_string(priv_key, curve=ecdsa.SECP256k1)
+    vk = sk.get_verifying_key()
+    node_public_key = '04' + binascii.hexlify(vk.to_string()).decode()
+    
 
 
 
