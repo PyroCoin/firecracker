@@ -18,21 +18,19 @@ from Communication.DataStoring import FirebaseConnection
 from Communication.appClient import Clientmain
 from Communication.appServer import Server 
 
+import requests
+
+
+
 UI_Style = Style()
 
 def verify_signature(signature, text, public_key):
-    try:
-        vk = ecdsa.VerifyingKey.from_string(bytes.fromhex(public_key), curve=ecdsa.SECP256k1)
-        try:
-            vk.verify(bytes.fromhex(signature), text.encode())
-            return True
-        except BadSignatureError:
-            return False
+    url = 'https://crows.sh/verifySignature'
+    body = {'signature': signature, "transactionRepresentation": text, "publicKey": public_key}
 
-    except ValueError:
-        return False
+    x = requests.post(url, data=body)
 
-
+    return x.json()["valid_signature"]
 
 
 class Blockchain:

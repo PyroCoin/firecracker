@@ -8,8 +8,10 @@ app = Flask(__name__)
 def generate_keypair():
     sk = SigningKey.generate(curve=SECP256k1)
 
+    pub_key = "04" + sk.verifying_key.to_string().hex()
+
     return f"""
-        <p><b>Public Key:</b> {sk.verifying_key.to_string().hex()}</p>
+        <p><b>Public Key:</b> {pub_key}</p>
         <p><b>Private Key:</b> {sk.to_string().hex()}</p>
         <br>
         <button onClick="window.location.reload();">Generate Another Key Pair</button>
