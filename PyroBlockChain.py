@@ -16,12 +16,13 @@ from uuid import uuid4
 from hashlib import sha256
 import binascii
 import os
+import ecdsa
 
-from GenerateSignedTransaction import CreateSignature
 
+from GenerateSignedTransaction import CreateSignature, Verify
 from Communication.DataStoring import FirebaseConnection
 from Communication.appClient import Clientmain
-from Communication.appServer import Server 
+from Communication.appServer import Server
 import requests
 
 
@@ -67,7 +68,6 @@ class Blockchain:
     def CheckNewData(self, data_list):
         for data in data_list:
             try:
-                
                 Chain = data.get('Chain')
                 Transactions = data.get('Current Transactions')
                 Users = Users.get('Users')
@@ -130,35 +130,40 @@ class Blockchain:
                 sender = str(transaction['sender']) #creates a variable equal to the sender's public address
                 recipient = str(transaction['recipient']) #creates a variable equal to the recipient's public address
                 amount = int(transaction['amount']) #creates a varible equal to the amount
-            
+                verification = ecdsa.VerifyingKey.from_string(sender)
+                signature = str(transaction['signature'])
 
-                if self.users.get(sender) == None: #Checks if the sender has ever been in a transaction
-                    self.users[sender] = 0 #If not, they are added to the list of users, with the net worth being 0
+                if verification.verify(signature, b'Transaction') == True:
+                    if self.users.get(sender) == None: #Checks if the sender has ever been in a transaction
+                        self.users[sender] = 0 #If not, they are added to the list of users, with the net worth being 0
 
-                senderAmount = self.users.get(sender) #Gets the net worth of the sender
+                    senderAmount = self.users.get(sender) #Gets the net worth of the sender
 
-                if recipient not in self.users: #Checks if the recipient has ever been in a transaction
-                    self.users[recipient] = 0 #If not, they are added to the list of users, with the net worth being 0
+                    if recipient not in self.users: #Checks if the recipient has ever been in a transaction
+                        self.users[recipient] = 0 #If not, they are added to the list of users, with the net worth being 0
 
-                recipientAmount = self.users.get(recipient) #Gets the worth of the recipient
-
-                
-                senderAfterTransaction = senderAmount - amount
-                print(senderAfterTransaction) 
-
-                if senderAfterTransaction >= 0: #If the transaction amount is greater or equal to the sender's worth, the transaction will occur
-                    senderAmount -= amount #subtracts the transaction amount from the worth of the sender
-                    self.users[sender] = senderAmount #Actually changes the value of the sender in the userlist
-
-                    recipientAmount += int(amount) #Adds the transaction amount to the worth of the user
-                    self.users[recipient] = recipientAmount #Actually changes the value of the recipient in the userlist
+                    recipientAmount = self.users.get(recipient) #Gets the worth of the recipient
 
                     
-                
-                elif 0 > senderAfterTransaction: #The sender is unable to afford the transaction
-                    self.transactionsCheck.remove(transaction)#Removes the transaction from the transactions list
+                    senderAfterTransaction = senderAmount - amount
+                    print(senderAfterTransaction) 
 
-                self.verifiedTransactions.append(transaction)
+                    if senderAfterTransaction >= 0: #If the transaction amount is greater or equal to the sender's worth, the transaction will occur
+                        senderAmount -= amount #subtracts the transaction amount from the worth of the sender
+                        self.users[sender] = senderAmount #Actually changes the value of the sender in the userlist
+
+                        recipientAmount += int(amount) #Adds the transaction amount to the worth of the user
+                        self.users[recipient] = recipientAmount #Actually changes the value of the recipient in the userlist
+
+                        
+                    
+                    elif 0 > senderAfterTransaction: #The sender is unable to afford the transaction
+                        self.transactionsCheck.remove(transaction)#Removes the transaction from the transactions list
+
+                    self.verifiedTransactions.append(transaction)
+                else:
+                    self.transactionsCheck.remove(transaction)
+
                     
 
 
@@ -195,7 +200,7 @@ class Blockchain:
 
 
 
-    def new_transaction(self, sender, recipient, amount):
+    def new_transaction(self, sender, recipient, amount, signature):
         """
         Creates a new transaction to go into the next mined Block
         :param sender: Address of the Sender
@@ -211,9 +216,10 @@ class Blockchain:
 
 
         self.current_transactions.append({
-            'sender': sender,
+            'sender': sender.to_string(),
             'recipient': recipient,
             'amount': amount,
+            'signature': signature,
             'transaction_id': transaction_id,
             'timestamp': timestamp 
         })
@@ -275,6 +281,19 @@ class Blockchain:
     def polishChainDisplay(chain):
         pass
 
+    def IncomingData(self):
+        self.AllIncomeData = []
+        while True:
+            self.Data =  Server.IncomeData()
+            for data in self.Data:
+                self.AllIncomeData.append(data)
+
+
+        
+
+    
+
+
 
 
 
@@ -309,6 +328,8 @@ def mine():
     # Forge the new Block by adding it to the chain
     previous_hash = blockchain.hash(last_block)
     block = blockchain.new_block(proof, previous_hash)
+    Message = Blockchain.Data
+    Clientmain(Message)
 
     response = {
         'message': "New Block Forged",
@@ -322,44 +343,15 @@ def mine():
 
 
 def new_transaction(TransactionData, root):
-    #DictionaryData = {'sender': sender, 'recipient': recipient, 'amount': amount, 'PrivateKey': privKey}
-
-    signature = CreateSignature(TransactionData.get('PrivateKey'), TransactionData.get('sender'), TransactionData.get('recipient'), TransactionData.get('amount'))
-    print(signature)
-
-    if signature == 'Incorrect Data':
-        try:
-            Error.destroy()
-            Error = tk.Label(root, text='Incorrect Data')
-            Error.pack()
-        except:
-            Error = tk.Label(root, text='Incorrect Data')
-            Error.pack()
-
-
-
-
-
-    else:
-        TransactionDataDict = {'sender': TransactionData.get('sender'), 'recipient': TransactionData.get('recipient'), 'amount': TransactionData.get('amount'), 'signature': signature}
-        values = TransactionDataDict
-        # Check that the required fields are in the POST'ed data
-        required = ['signature', 'sender', 'recipient', 'amount']
-        if not all(k in values for k in required):
-            MissingValues = tk.Label(root, text='Missing values')
-            MissingValues.pack()
-
-        unsigned_transaction_format = f"{values['sender']} -{values['amount']}-> {values['recipient']}"
-
-        # Verify signature is valid
-        if not verify_signature(values['signature'], unsigned_transaction_format, values['sender']):
-            badSignature = tk.Label(root, text='Your signature does not verify your transaction')
-            badSignature.pack()
+    #DictionaryData = {'sender': sender, 'recipient': recipient, 'amount': amount, 'Singature': Signature}
 
         try:
             # Create a new Transaction
-            blockchain.new_transaction(TransactionData.get('sender'), TransactionData.get('recipient'), TransactionData.get('amount'), root)
-
+            blockchain.new_transaction(TransactionData.get('sender'), TransactionData.get('recipient'), TransactionData.get('amount'), TransactionData.get('signature'), root)
+            Success = tk.Label(root, text='Success! This transaction will be verified!')
+            Success.pack()
+            Message = Blockchain.Data
+            Clientmain(Message)
         except:
             pass
 
@@ -372,9 +364,12 @@ def users():
     return str(blockchain.users)
 
 class PyroInterface(tk.Frame):
-    def __init__(self, userKey, privateKey, root):
+    def __init__(self, userKey, privateKey, viewPub, viewPriv, root):
         self.userKey = userKey
         self.privateKey = privateKey
+
+        self.ViewPriv = viewPriv
+        self.ViewPub = viewPub
         tk.Frame.__init__(self, root)
         root.winfo_toplevel().title('PyroCoin Full Node')
 
@@ -427,14 +422,14 @@ class PyroInterface(tk.Frame):
     def Signup(self):
         for widget in root.winfo_children():
             widget.destroy()
-        KeepSafe = tk.Label(root, text='These are your new keys. Please keep these safe. If someone were to steal this, they would be able to take away all your PyroCoin!')
+        KeepSafe = tk.Label(root, text='These keys are important. Keep your private key safe to keep your PyroCoin safe!')
 
-        YourNewPublicKey = tk.Text(root, height=1, width=100, borderwidth=0)
-        YourNewPublicKey.insert(1.0, str('Your new public key is ' + str(self.userKey)))
+        YourNewPublicKey = tk.Text(root, height=1, width=150, borderwidth=0)
+        YourNewPublicKey.insert(1.0, str('Your new public key is ' + str(self.ViewPriv)))
         YourNewPublicKey.pack()
 
-        YourNewPrivateKey = tk.Text(root, height=1, width=100, borderwidth=0)
-        YourNewPrivateKey.insert(1.0, str('Your new private key is ' + str(self.privateKey)))
+        YourNewPrivateKey = tk.Text(root, height=1, width=150, borderwidth=0)
+        YourNewPrivateKey.insert(1.0, str('Your new private key is ' + str(self.ViewPriv)))
         YourNewPrivateKey.pack()
         
         
@@ -444,28 +439,23 @@ class PyroInterface(tk.Frame):
         backBTN.pack()
 
     def CheckData(self):
-        priv = self.PrivateKeyText.get('1.0', 'end-1c')
-        
-        
-        else:
-            privList = list(priv)
-            for string in privList:
-                if string == ' ':
-                    del(privList[privList.index(string)])
-            pub = sha256(priv.encode()).hexdigest()
+        priv = self.PrivateKeyText.get('1.0', 'end-1c').encode()
+        pub = hashlib.sha256(priv).hexdigest()
 
-            
-            for widget in root.winfo_children():
-                widget.destroy()
-            
-            
-            Approved = tk.Label(root, text=str('Is your public key \n' + pub))
-            Approved.pack()
-            ContBTN = tk.Button(root, text='Continue', command=self.main)
-            ContBTN.pack()
-            backBTN = tk.Button(root, text='Back', command=self.Welcome)
-            backBTN.pack()
-            self.userKey = pub
+
+        for widget in root.winfo_children():
+            widget.destroy()
+
+        
+        
+        
+        Approved = tk.Label(root, text=str('Is your public key \n' + pub))
+        Approved.pack()
+        ContBTN = tk.Button(root, text='Continue', command=self.main)
+        ContBTN.pack()
+        backBTN = tk.Button(root, text='Back', command=self.Welcome)
+        backBTN.pack()
+        self.userKey = pub
 
     
 
@@ -539,6 +529,9 @@ class PyroInterface(tk.Frame):
 
         btn_submit = tk.Button(root, text="Submit", command=self.getAndUseData)
         btn_submit.pack()
+        
+        backBTN = tk.Button(root, text='Back', command=self.main)
+        backBTN.pack()
 
     def getAndUseData(self):
         privKey =  self.privateKey.get("1.0",'end-1c')
@@ -546,13 +539,11 @@ class PyroInterface(tk.Frame):
         recipient = self.Recipient.get('1.0', 'end-1c')
         sender = self.userKey
 
-        print(privKey)
-        print(amount)
-        print(recipient)
-        print(sender)
+        signer = ecdsa.SigningKey.from_string(privKey)
+        signature = signer.sign(b'Transaction')
+
         
-        DictData = {'sender': sender, 'recipient': recipient, 'amount': amount, 'PrivateKey': privKey}
-        
+        DictData = {'sender': sender, 'recipient': recipient, 'amount': amount, 'Signature': signature}
         new_transaction(DictData, root)
 
         
@@ -575,26 +566,26 @@ class PyroInterface(tk.Frame):
         btn_mine.pack()
 
 
+
         
+def UIMainLoop(root):
+    root.mainloop()
+
     
         
 
 
 if __name__ == '__main__':
-    from argparse import ArgumentParser
-
     root = tk.Tk()
-    parser = ArgumentParser()
+
+    privateKey = ecdsa.SigningKey.generate()
+    node_public_key = privateKey.get_verifying_key()
+
+    PublicDisplayKey = node_public_key.to_string()
+    PrivateDisplayKey = privateKey.to_string()
 
     
-
-
-
-    
-    privateKey = os.urandom(32)
-    sk = ecdsa.SigningKey.from_string(priv_key, curve=ecdsa.SECP256k1)
-    vk = sk.get_verifying_key()
-    node_public_key = '04' + binascii.hexlify(vk.to_string()).decode()
+   
     
 
 
@@ -604,11 +595,15 @@ if __name__ == '__main__':
     
 
 
-    UI = PyroInterface(node_public_key, privateKey, root)
+    UI = PyroInterface(node_public_key, privateKey, PublicDisplayKey, PrivateDisplayKey, root)
 
 
     UI.pack(side="top", fill="both", expand=True)
     root.mainloop()
+
+    
+
+    
     
 
   
