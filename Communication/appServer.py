@@ -60,18 +60,12 @@ class Server:
                     data = self.message.getMessage()
                     self.recieved_messages.append(data)
 
-                            
-                            
-                            
-                            
-       
-        
         except KeyboardInterrupt:
             print("caught keyboard interrupt, exiting")
         finally:
             self.sel.close()
 
-    def incomingData(self):
+    def IncomeData(self):
         return self.recieved_messages
             
             
