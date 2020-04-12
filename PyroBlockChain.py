@@ -14,9 +14,10 @@ import time
 from functools import partial
 from uuid import uuid4
 from hashlib import sha256
-import binascii
+from binascii import unhexlify
 import os
 import ecdsa
+
 
 
 from GenerateSignedTransaction import CreateSignature, Verify
@@ -128,9 +129,11 @@ class Blockchain:
         for transaction in self.current_transactions: #Creates a for loop that goes thru all the transactions
             if transaction not in self.verifiedTransactions:
                 sender = str(transaction['sender']) #creates a variable equal to the sender's public address
+                nonHexSend = sender[2:]
+                senderSign = bytes.fromhex(nonHexSend)
                 recipient = str(transaction['recipient']) #creates a variable equal to the recipient's public address
                 amount = int(transaction['amount']) #creates a varible equal to the amount
-                verification = ecdsa.VerifyingKey.from_string(sender)
+                verification = ecdsa.VerifyingKey.from_string(senderSign)
                 signature = str(transaction['signature'])
 
                 if verification.verify(signature, b'Transaction') == True:
@@ -216,7 +219,7 @@ class Blockchain:
 
 
         self.current_transactions.append({
-            'sender': sender.to_string(),
+            'sender': sender,
             'recipient': recipient,
             'amount': amount,
             'signature': signature,
@@ -275,7 +278,7 @@ class Blockchain:
 
         guess = f'{last_proof}{proof}{last_hash}'.encode()
         guess_hash = hashlib.sha256(guess).hexdigest()
-        return guess_hash[:7] == "0000000"
+        return guess_hash[:2] == "00"
 
     
     def polishChainDisplay(chain):
@@ -287,6 +290,10 @@ class Blockchain:
             self.Data =  Server.IncomeData()
             for data in self.Data:
                 self.AllIncomeData.append(data)
+
+    def newMessage(self):
+        self.Data = {'Current Transactions': self.current_transactions, 'Verified Transactions': self.verifiedTransactions, 'Chain': self.chain, 'Users': self.users}
+        return self.Data
 
 
         
@@ -323,6 +330,7 @@ def mine():
         sender="0",
         recipient=node_public_key,
         amount=blockchain.Mine_Prize,
+        signature='None'
     )
 
     # Forge the new Block by adding it to the chain
@@ -345,15 +353,14 @@ def mine():
 def new_transaction(TransactionData, root):
     #DictionaryData = {'sender': sender, 'recipient': recipient, 'amount': amount, 'Singature': Signature}
 
-        try:
-            # Create a new Transaction
-            blockchain.new_transaction(TransactionData.get('sender'), TransactionData.get('recipient'), TransactionData.get('amount'), TransactionData.get('signature'), root)
-            Success = tk.Label(root, text='Success! This transaction will be verified!')
-            Success.pack()
-            Message = Blockchain.Data
-            Clientmain(Message)
-        except:
-            pass
+    
+        # Create a new Transaction
+        blockchain.new_transaction(TransactionData.get('sender'), TransactionData.get('recipient'), TransactionData.get('amount'), TransactionData.get('signature'))
+        Success = tk.Label(root, text='Success! This transaction will be verified!')
+        Success.pack()
+        Message = Blockchain.newMessage()
+        Clientmain(Message)
+
 
 
 def full_chain():
@@ -425,13 +432,11 @@ class PyroInterface(tk.Frame):
         KeepSafe = tk.Label(root, text='These keys are important. Keep your private key safe to keep your PyroCoin safe!')
 
         YourNewPublicKey = tk.Text(root, height=1, width=150, borderwidth=0)
-        YourNewPublicKey.insert(1.0, str('Your new public key is ' + str(self.ViewPriv)))
+        YourNewPublicKey.insert(1.0, str('Your new public key is ' + str(self.ViewPub)))
         YourNewPublicKey.pack()
-
         YourNewPrivateKey = tk.Text(root, height=1, width=150, borderwidth=0)
         YourNewPrivateKey.insert(1.0, str('Your new private key is ' + str(self.ViewPriv)))
         YourNewPrivateKey.pack()
-        
         
         KeepSafe.pack()
         
@@ -439,9 +444,19 @@ class PyroInterface(tk.Frame):
         backBTN.pack()
 
     def CheckData(self):
-        priv = self.PrivateKeyText.get('1.0', 'end-1c').encode()
-        pub = hashlib.sha256(priv).hexdigest()
+        priv = self.PrivateKeyText.get('1.0', 'end-1c')
+        
+        ObjectPriv = bytes(priv, encoding='ascii')
+        ObjectPriv = ObjectPriv.fromhex()
+        Private = ObjectPriv.from_string()
 
+
+
+
+    
+        pub = ObjectPriv.verifying_key()
+
+        ObjectPub = ObjectPriv.verifying_key()
 
         for widget in root.winfo_children():
             widget.destroy()
@@ -455,13 +470,7 @@ class PyroInterface(tk.Frame):
         ContBTN.pack()
         backBTN = tk.Button(root, text='Back', command=self.Welcome)
         backBTN.pack()
-        self.userKey = pub
-
-    
-
-
-
-
+        self.userKey = ObjectPub
 
     def mineBlocks(self):
         for widget in root.winfo_children():
@@ -539,7 +548,8 @@ class PyroInterface(tk.Frame):
         recipient = self.Recipient.get('1.0', 'end-1c')
         sender = self.userKey
 
-        signer = ecdsa.SigningKey.from_string(privKey)
+        EncodedSign = bytes.fromhex(privKey)
+        signer = ecdsa.SigningKey.from_string(EncodedSign)
         signature = signer.sign(b'Transaction')
 
         
@@ -581,9 +591,11 @@ if __name__ == '__main__':
     privateKey = ecdsa.SigningKey.generate()
     node_public_key = privateKey.get_verifying_key()
 
-    PublicDisplayKey = node_public_key.to_string()
-    PrivateDisplayKey = privateKey.to_string()
+    PublicDisplayKey = '04' + node_public_key.to_string().hex()
+    PrivateDisplayKey = privateKey.to_string().hex()
 
+    print(PublicDisplayKey)
+    print(PrivateDisplayKey)
     
    
     
