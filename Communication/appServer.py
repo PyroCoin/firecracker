@@ -31,7 +31,7 @@ class Server:
         lsock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         lsock.bind((self.host, self.port))
         lsock.listen()
-        print("listening on", (self.host, self.port))
+        
         lsock.setblocking(False)
         self.sel.register(lsock, selectors.EVENT_READ, data=None)
         
@@ -48,13 +48,10 @@ class Server:
                         
                         try:
                             self.message.process_events(mask)
-                            print(self.message.request)
+                            
                             
                         except Exception:
-                            print(
-                                "main: error: exception for",
-                                f"{self.message.addr}:\n{traceback.format_exc()}",
-                            )
+                            print('Error')
                             
                             self.message.close()
                     data = self.message.getMessage()

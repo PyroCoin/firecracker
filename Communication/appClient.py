@@ -45,10 +45,7 @@ class Client(asyncio.Protocol):
                     try:
                         message.process_events(mask)
                     except Exception:
-                        print(
-                            "main: error: exception for",
-                            f"{message.addr}:\n{traceback.format_exc()}",
-                        )
+                        print('Error')
                         message.close()
                 # Check for a socket being monitored to continue.
                 if not self.sel.get_map():
@@ -76,9 +73,9 @@ async def connect_to_server(loop, message, server_host, server_port):
     
 
 
-def Clientmain(message):
+def ClientMain(message):
     ServerNodeData = FirebaseConnection()
-    ServerNodeData.findEndpoints()
+    ServerNodeData.findSockets()
 
     loop = asyncio.get_event_loop()
 

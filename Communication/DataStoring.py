@@ -44,7 +44,7 @@ class FirebaseConnection:
 
             
 
-    def findEndpoints(self):
+    def findSockets(self):
         if os.stat('Endpoints.txt').st_size == 0:
             self.dataBase.child('users').push(self.currentNode)
 
