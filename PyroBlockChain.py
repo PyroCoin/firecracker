@@ -9,7 +9,7 @@ import ecdsa
 from datetime import datetime
 import threading
 import tkinter as tk
-from tkinter.ttk import *
+from tkinter import ttk
 import time
 from functools import partial
 from uuid import uuid4
@@ -28,7 +28,7 @@ from Communication.appServer import Server
 
 
 
-UI_Style = Style()
+UI_Style = ttk.Style()
 
 def verify_signature(signature, text, public_key):
     url = 'https://crows.sh/verifySignature'
@@ -186,7 +186,7 @@ class Blockchain:
                         if recipient not in self.users: #Checks if the recipient has ever been in a transaction
                             self.users[recipient] = self.Mine_Prize #If not, they are added to the list of users, with the net worth being the mining prize
                     else:
-                        
+                        raise ValueError('Error!')
                     
 
 
@@ -301,8 +301,7 @@ class Blockchain:
         return guess_hash[:2] == "00"
 
     
-    def polishChainDisplay(chain):
-        pass
+
 
     def newMessage(self):
         self.Data = {'Current Transactions': self.current_transactions, 'Verified Transactions': self.verifiedTransactions, 'Chain': self.chain, 'Users': self.users}
@@ -425,6 +424,7 @@ class PyroInterface(tk.Frame):
 
         SubmitBTN = tk.Button(root, text='Submit', command=self.CheckData)
         SubmitBTN.pack()
+        
 
 
     def Signup(self):
@@ -447,25 +447,29 @@ class PyroInterface(tk.Frame):
     def CheckData(self):
         priv = self.PrivateKeyText.get('1.0', 'end-1c')
         
-        ObjectPriv = bytes(priv, encoding='ascii')
-        ObjectPriv = ObjectPriv.fromhex()
-        Private = ObjectPriv.from_string()
-
-
-
+        
+        if len(priv) == 0:
+            EncodedSign = self.privateKey.to_string()
+            print('Hello')
+        else:
+            try:
+                EncodedSign = bytes.fromhex(priv)
+                EncodedSign = self.privateKey.to_string().hex()
+            except:
+                EncodedSign = self.privateKey.to_string()
+                
+        
 
     
-        pub = ObjectPriv.verifying_key()
-
-        ObjectPub = ObjectPriv.verifying_key()
+        ObjectPriv = ecdsa.SigningKey.from_string(EncodedSign)
+        pub = ObjectPriv.verifying_key.to_string().hex()
+    
+        
 
         for widget in root.winfo_children():
             widget.destroy()
 
-        
-        
-        
-        Approved = tk.Label(root, text=str('Is your public key \n' + pub))
+        Approved = tk.Label(root, text=str('Is your public key \n' + str(pub)))
         Approved.pack()
         ContBTN = tk.Button(root, text='Continue', command=self.main)
         ContBTN.pack()
@@ -508,13 +512,37 @@ class PyroInterface(tk.Frame):
     def full_chain(self):
         for widget in root.winfo_children():
             widget.destroy()
-        entireChain = tk.Message(root, text=blockchain.chain)
-        entireChain.pack()
 
+        i = 1
+        for block in blockchain.chain:
+            BlockButton = tk.Button(root, text=str('Block ' + str(i)), command=self.ShowChain(i - 1))
+            i += 1
+            BlockButton.pack()
         self.GoBack()
 
     
-    
+    def ShowChain(self, chainNumber):
+        for widget in root.winfo_children():
+            widget.destroy()
+
+        messages = []
+        block = blockchain.chain[chainNumber]
+        transactions = block.get('transactions')
+        
+        messages.append('This is block ' + str(chainNumber) + '\n')
+
+        for transaction in transactions:
+            messages.append(transaction.get('sender') + ' sent ' + str(transaction.get('amount') + ' PyroCoin to ' + str(transaction.get('recipient') + '\n')))
+        JoinedMessage = ''.join(messages)
+        DisplayMessage = ttk.Entry(root, textvariable=JoinedMessage, state='readonly')
+        myscroll = ttk.Scrollbar(root, orient='horizontal', command=DisplayMessage.xview)
+        DisplayMessage.config(xscrollcommand=myscroll.set)
+
+        root.grid()
+        DisplayMessage.grid(row=1, sticky='ew')
+        myscroll.grid(row=2, sticky='ew')
+
+
     def new_transactions(self):
         for widget in root.winfo_children():
             widget.destroy()
