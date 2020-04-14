@@ -79,15 +79,19 @@ def ClientMain(message):
 
     loop = asyncio.get_event_loop()
 
+    NodesConnectedTo = []
     for data in ServerNodeData.Nodes:
-        try:
-            serverIP = data['IP']
-            serverPort = data['PORT']
-            loop.create_task(connect_to_server(loop, message, serverIP, serverPort))
+        if data not in NodesConnectedTo:
+            NodesConnectedTo.append(data)
+            try:
+                serverIP = data['IP']
+                serverPort = data['PORT']
+                loop.create_task(connect_to_server(loop, message, serverIP, serverPort))
 
-        except:
+            except:
+                pass
+        else:
             pass
-
     loop.run_until_complete(connect_to_server(loop, message, serverIP, serverPort))
     
             
