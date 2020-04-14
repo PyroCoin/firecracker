@@ -76,6 +76,7 @@ class Blockchain:
 
 
                 if len(Chain) > len(self.chain) and len(Users) > len(self.users):
+                    self.VerifyChain(Chain)
                     self.chain = Chain
                     self.current_transactions = Transactions
                     self.users = Users
@@ -102,7 +103,74 @@ class Blockchain:
             except:
                 pass
 
+    
+    def VerifyChain(self, transactionList):
+        transactionsCheck = []
+        for transaction in transactionList:
+            if transaction not in self.verifiedTransactions:
+                self.verifiedTransactions.append(transaction)
+                try:
+                    sender = bytes.fromhex(transaction['sender']) #creates a variable equal to the sender's public address
+                    recipient = str(transaction['recipient']) #creates a variable equal to the recipient's public address
+                    amount = int(transaction['amount']) #creates a varible equal to the amount
+                    verification = ecdsa.VerifyingKey.from_string(sender)
+                    transaction_id = str(transaction[transaction_id])
+                    signature = bytes.fromhex(transaction['signature'])
+                    
+                except:
+                    if str(transaction['signature']) == 'None':
+                        pass
+                    else:
+                        transactionsCheck.remove(transaction)
+                        
+                        
+                        
+                try:
+                    if verification.verify(signature, b'Transaction') == True:
+                        if self.users.get(sender) == None: #Checks if the sender has ever been in a transaction
+                            self.users[sender] = 0 #If not, they are added to the list of users, with the net worth being 0
 
+                        senderAmount = self.users.get(sender) #Gets the net worth of the sender
+
+                        if recipient not in self.users: #Checks if the recipient has ever been in a transaction
+                            self.users[recipient] = 0 #If not, they are added to the list of users, with the net worth being 0
+                        recipientAmount = self.users.get(recipient) #Gets the worth of the recipient
+
+                        
+                        senderAfterTransaction = senderAmount - amount
+                        
+
+                        if senderAfterTransaction >= 0: #If the transaction amount is greater or equal to the sender's worth, the transaction will occur
+                            senderAmount -= amount #subtracts the transaction amount from the worth of the sender
+                            self.users[sender] = senderAmount #Actually changes the value of the sender in the userlist
+
+                            recipientAmount += int(amount) #Adds the transaction amount to the worth of the user
+                            self.users[recipient] = recipientAmount #Actually changes the value of the recipient in the userlist
+
+                            
+                        
+                        elif 0 > senderAfterTransaction: #The sender is unable to afford the transaction
+                           transactionsCheck.remove(transaction)#Removes the transaction from the transactions list
+
+                        self.verifiedTransactions.append(transaction)
+
+
+
+                    else:
+                        transactionsCheck.remove(transaction)
+                except:
+                    signature = str(transaction['signature'])
+                    if signature == 'None':
+                        if self.users.get('0') > 100:
+                            self.users['0'] -= self.Mine_Prize
+                        recipient = str(transaction['recipient'])
+
+                        if recipient not in self.users: #Checks if the recipient has ever been in a transaction
+                            self.users[recipient] = self.Mine_Prize #If not, they are added to the list of users, with the net worth being the mining prize
+
+                    
+
+                
 
     def new_block(self, proof, previous_hash):
         """
@@ -128,6 +196,7 @@ class Blockchain:
         """
         for transaction in self.current_transactions: #Creates a for loop that goes thru all the transactions
             if transaction not in self.verifiedTransactions:
+                self.verifiedTransactions.append(transaction)
                 try:
                     sender = bytes.fromhex(transaction['sender']) #creates a variable equal to the sender's public address
                     recipient = str(transaction['recipient']) #creates a variable equal to the recipient's public address
@@ -140,7 +209,9 @@ class Blockchain:
                     if str(transaction['signature']) == 'None':
                         pass
                     else:
-                        raise ValueError('Incorrect Singature')
+                        self.transactionsCheck.remove(transaction)
+                        
+                        
                         
                 try:
                     if verification.verify(signature, b'Transaction') == True:
@@ -151,7 +222,6 @@ class Blockchain:
 
                         if recipient not in self.users: #Checks if the recipient has ever been in a transaction
                             self.users[recipient] = 0 #If not, they are added to the list of users, with the net worth being 0
-
                         recipientAmount = self.users.get(recipient) #Gets the worth of the recipient
 
                         
@@ -185,8 +255,7 @@ class Blockchain:
 
                         if recipient not in self.users: #Checks if the recipient has ever been in a transaction
                             self.users[recipient] = self.Mine_Prize #If not, they are added to the list of users, with the net worth being the mining prize
-                    else:
-                        raise ValueError('Error!')
+
                     
 
 
@@ -204,12 +273,14 @@ class Blockchain:
             }
 
 
-            
+            print(block)
+            print('Jet')
+
 
             # Reset the current list of transactions 
             self.current_transactions = []
             self.transactionsCheck = []
-            self.verifiedTransactions = []
+            
             
             
             self.chain.append(block)
@@ -341,14 +412,6 @@ def mine(node):
     block = blockchain.new_block(proof, previous_hash)
 
 
-    response = {
-        'message': "New Block Forged",
-        'index': block['index'],
-        'transactions': block['transactions'],
-        'proof': block['proof'],
-        'previous_hash': block['previous_hash'],
-    }
-    
 
 
 
@@ -504,19 +567,27 @@ class PyroInterface(tk.Frame):
     def users(self):       
         for widget in root.winfo_children():
             widget.destroy()
-        users = tk.Label(root, text=blockchain.users)
-        users.pack()
+
+        for user in blockchain.users:
+            PublicKey = str(user)
+            NetWorth = str(blockchain.users[user])
+
+            UserNetWorth = tk.Label(root, text=str(PublicKey + ' has ' + NetWorth))
+            UserNetWorth.pack()
+
         self.GoBack()
+
         
 
     def full_chain(self):
         for widget in root.winfo_children():
             widget.destroy()
 
-        i = 1
+        print(blockchain.chain)
+        
         for block in blockchain.chain:
-            BlockButton = tk.Button(root, text=str('Block ' + str(i)), command=self.ShowChain(i - 1))
-            i += 1
+            BlockButton = tk.Button(root, text=str('Block ' + str(blockchain.chain.index(block))), command=lambda: self.ShowChain(blockchain.chain.index(block)))
+            
             BlockButton.pack()
         self.GoBack()
 
@@ -532,15 +603,14 @@ class PyroInterface(tk.Frame):
         messages.append('This is block ' + str(chainNumber) + '\n')
 
         for transaction in transactions:
-            messages.append(transaction.get('sender') + ' sent ' + str(transaction.get('amount') + ' PyroCoin to ' + str(transaction.get('recipient') + '\n')))
-        JoinedMessage = ''.join(messages)
-        DisplayMessage = ttk.Entry(root, textvariable=JoinedMessage, state='readonly')
-        myscroll = ttk.Scrollbar(root, orient='horizontal', command=DisplayMessage.xview)
-        DisplayMessage.config(xscrollcommand=myscroll.set)
 
-        root.grid()
-        DisplayMessage.grid(row=1, sticky='ew')
-        myscroll.grid(row=2, sticky='ew')
+            messages.append(str(transaction.get('sender')) + ' sent ' + str(transaction.get('amount')) + ' PyroCoin to ' + str(transaction.get('recipient') + '\n'))
+        JoinedMessage = ''.join(messages)
+        Messages = tk.Label(root, text=JoinedMessage)
+        Messages.pack()
+
+        backBT = tk.Button(root, text='Back', command=self.full_chain)
+        backBT.pack()
 
 
     def new_transactions(self):
@@ -576,15 +646,16 @@ class PyroInterface(tk.Frame):
         amount = self.Amount.get('1.0', 'end-1c')
         recipient = self.Recipient.get('1.0', 'end-1c')
         sender = self.userKey
+        try:
+            EncodedSign = bytes.fromhex(privKey)
+            signer = ecdsa.SigningKey.from_string(EncodedSign)
+            signature = signer.sign(b'Transaction').hex()
+            DictData = {'sender': self.ViewPub, 'recipient': recipient, 'amount': amount, 'signature': signature}
+            new_transaction(DictData, root)   
+        except:
+            self.GoBack()
 
-        EncodedSign = bytes.fromhex(privKey)
-        signer = ecdsa.SigningKey.from_string(EncodedSign)
-        signature = signer.sign(b'Transaction').hex()
 
-
-        
-        DictData = {'sender': self.ViewPub, 'recipient': recipient, 'amount': amount, 'signature': signature}
-        new_transaction(DictData, root)
 
     
     def main(self):
@@ -609,6 +680,8 @@ def UIMainLoop(root):
 
 
 if __name__ == '__main__':
+
+    
     root = tk.Tk()
 
     privateKey = ecdsa.SigningKey.generate()
